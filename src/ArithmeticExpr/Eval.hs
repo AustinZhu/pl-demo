@@ -1,9 +1,9 @@
-module Eval
+module ArithmeticExpr.Eval
   ( eval,
   )
 where
 
-import Data
+import ArithmeticExpr.Data
 
 eval1 :: Term -> Maybe Term
 eval1 (TmIf p t1 t2) = case p of

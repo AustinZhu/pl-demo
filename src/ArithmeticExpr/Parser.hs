@@ -1,6 +1,6 @@
-module Parser where
+module ArithmeticExpr.Parser where
 
-import Data
+import ArithmeticExpr.Data
 import Data.Void
 import System.Exit (exitFailure)
 import Text.Megaparsec
