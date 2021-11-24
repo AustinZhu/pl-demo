@@ -1,9 +1,17 @@
-module ArithmeticExpr.Parser where
+module ArithmeticExpr.Parser (parseCode) where
 
-import ArithmeticExpr.Data
-import Data.Void
+import ArithmeticExpr.Data (Term (..))
+import Data.Void (Void)
 import System.Exit (exitFailure)
 import Text.Megaparsec
+  ( MonadParsec (eof),
+    Parsec,
+    between,
+    choice,
+    errorBundlePretty,
+    parse,
+    (<|>),
+  )
 import qualified Text.Megaparsec.Char as C
 import qualified Text.Megaparsec.Char.Lexer as L
 
@@ -22,7 +30,7 @@ parens :: Parser Term -> Parser Term
 parens = between (symbol "(") (symbol ")")
 
 isKeyword :: String -> Bool
-isKeyword s = s `elem` ["if", "then", "else", "True", "False", "succ", "pred", "0", "isZero", "zero"]
+isKeyword s = s `elem` ["if", "then", "else", "true", "false", "succ", "pred", "0", "iszero", "zero"]
 
 pIf :: Parser Term
 pIf = do
@@ -36,12 +44,12 @@ pIf = do
 
 pTrue :: Parser Term
 pTrue = do
-  _ <- symbol "True"
+  _ <- symbol "true"
   pure TmTrue
 
 pFalse :: Parser Term
 pFalse = do
-  _ <- symbol "False"
+  _ <- symbol "false"
   pure TmFalse
 
 pSucc :: Parser Term
@@ -58,7 +66,7 @@ pPred = do
 
 pIsZero :: Parser Term
 pIsZero = do
-  _ <- symbol "isZero"
+  _ <- symbol "iszero"
   n <- pConst <|> parens pTerm
   pure $ TmIsZero n
 
@@ -76,7 +84,7 @@ pTerm = choice [pIf, pSucc, pPred, pIsZero]
 pSrc :: Parser Term
 pSrc = between whitespace eof pTerm
 
-parseCode :: String -> IO Term
+parseCode :: String -> Term
 parseCode src = case parse pSrc "" src of
-  Left e -> putStrLn (errorBundlePretty e) >> exitFailure
-  Right t -> return t
+  Left e -> error (errorBundlePretty e)
+  Right t -> t

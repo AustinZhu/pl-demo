@@ -1,9 +1,6 @@
-module ArithmeticExpr.Eval
-  ( eval,
-  )
-where
+module ArithmeticExpr.Eval (evalTerm) where
 
-import ArithmeticExpr.Data
+import ArithmeticExpr.Data (Term (..), isNum)
 
 eval1 :: Term -> Maybe Term
 eval1 (TmIf p t1 t2) = case p of
@@ -29,5 +26,5 @@ eval1 (TmIsZero n) = case n of
     Nothing -> Nothing
 eval1 _ = Nothing
 
-eval :: Term -> Term
-eval t = maybe t eval (eval1 t)
+evalTerm :: Term -> Term
+evalTerm t = maybe t evalTerm (eval1 t)
