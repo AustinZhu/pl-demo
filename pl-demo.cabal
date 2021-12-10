@@ -25,11 +25,16 @@ source-repository head
 
 library
   exposed-modules:
-      ArithmeticExpr.Data
-      ArithmeticExpr.Eval
-      ArithmeticExpr.Parser
+      Arith.Data
+      Arith.Eval
+      Arith.Parser
       Lib
+      STLC.Data
+      STLC.Eval
+      STLC.Parser
       UTLC.Data
+      UTLC.Eval
+      UTLC.Parser
   other-modules:
       Paths_pl_demo
   hs-source-dirs:

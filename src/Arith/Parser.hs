@@ -1,6 +1,6 @@
-module ArithmeticExpr.Parser (parseCode) where
+module Arith.Parser (parseCode) where
 
-import ArithmeticExpr.Data (Term (..))
+import Arith.Data (Term (..))
 import Data.Void (Void)
 import System.Exit (exitFailure)
 import Text.Megaparsec
@@ -85,6 +85,6 @@ pSrc :: Parser Term
 pSrc = between whitespace eof pTerm
 
 parseCode :: String -> Term
-parseCode src = case parse pSrc "" src of
+parseCode src = case Text.Megaparsec.parse pSrc "" src of
   Left e -> error (errorBundlePretty e)
   Right t -> t

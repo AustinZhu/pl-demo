@@ -1,4 +1,4 @@
-module ArithmeticExpr.Data where
+module Arith.Data where
 
 data Term
   = TmTrue

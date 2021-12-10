@@ -3,7 +3,7 @@ module Main where
 import Control.Exception (catch)
 import GHC.Exception (ErrorCall (..))
 import GHC.IO.Handle (hFlush)
-import Lib (Code (Code), Lang (..), evalCode, help)
+import Lib (Code (Code), Lang (..), evalCode, help, mapLang)
 import System.Environment (getArgs)
 import System.Exit (exitSuccess)
 import System.IO (stdout)
@@ -45,16 +45,6 @@ exec :: Lang -> FilePath -> IO ()
 exec l f = do
   input <- readFile f
   prompt $ evalCode (Code l input)
-
-mapLang :: String -> Maybe Lang
-mapLang s = case s of
-  "arith" -> Just Arith
-  "utlc" -> Just UTLC
-  "stlc" -> Just STLC
-  "sub" -> Just Sub
-  "sf" -> Just SF
-  "dtlc" -> Just DTLC
-  _ -> Nothing
 
 helpMsg :: String
 helpMsg =

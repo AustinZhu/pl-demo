@@ -1,16 +1,28 @@
 module Lib where
 
-import ArithmeticExpr.Eval (evalTerm)
-import ArithmeticExpr.Parser (parseCode)
+import Arith.Eval (eval)
+import Arith.Parser (parseCode)
+import UTLC.Eval (eval)
+import UTLC.Parser (parseCode)
 
 data Code = Code Lang String
 
 data Lang = Arith | UTLC | STLC | Sub | SF | DTLC
 
+mapLang :: String -> Maybe Lang
+mapLang s = case s of
+  "arith" -> Just Arith
+  "utlc" -> Just UTLC
+  "stlc" -> Just STLC
+  "sub" -> Just Sub
+  "sf" -> Just SF
+  "dtlc" -> Just DTLC
+  _ -> Nothing
+
 evalCode :: Code -> String
 evalCode (Code l c) = case l of
-  Arith -> show $ evalTerm (parseCode c)
-  UTLC -> error "not implemented"
+  Arith -> show $ Arith.Eval.eval (Arith.Parser.parseCode c)
+  UTLC -> show $ UTLC.Eval.eval (UTLC.Parser.parseCode c)
   STLC -> error "not implemented"
   Sub -> error "not implemented"
   SF -> error "not implemented"
