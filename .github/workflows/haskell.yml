@@ -3,12 +3,23 @@ name: Haskell CI
 on:
   push:
     branches: [ main ]
+    paths:
+      - "**.hs"
+      - "**.cabal"
+      - "**.yaml"
+      - "**.lock"
+      - ".github/workflows/haskell.yml"
   pull_request:
     branches: [ main ]
+    paths:
+      - "**.hs"
+      - "**.cabal"
+      - "**.yaml"
+      - "**.lock"
+      - ".github/workflows/haskell.yml"
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
