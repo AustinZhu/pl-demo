@@ -1,6 +1,6 @@
 module UTLC.Eval (eval) where
 
-import UTLC.Data (Context, Term (..), Closure (..))
+import UTLC.Data (Closure (..), Context, Term (..))
 
 -- | Shift the de Bruijn indices of a term by the given amount.
 shift :: Int -> Term -> Term

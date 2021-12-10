@@ -1,6 +1,5 @@
 module UTLC.Parser (parseCode) where
 
-import UTLC.Data (Term (..), Context, Closure (..), name2Idx)
 import Data.Void (Void)
 import System.Exit (exitFailure)
 import Text.Megaparsec
@@ -10,10 +9,12 @@ import Text.Megaparsec
     choice,
     errorBundlePretty,
     parse,
-    (<|>), some
+    some,
+    (<|>),
   )
 import qualified Text.Megaparsec.Char as C
 import qualified Text.Megaparsec.Char.Lexer as L
+import UTLC.Data (Closure (..), Context, Term (..), name2Idx)
 
 type Parser = Parsec Void String
 
