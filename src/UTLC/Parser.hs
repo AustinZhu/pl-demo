@@ -3,7 +3,7 @@ module UTLC.Parser (parseCode) where
 import Data.Void (Void)
 import System.Exit (exitFailure)
 import Text.Megaparsec
-  ( MonadParsec (eof),
+  ( MonadParsec (eof, try),
     Parsec,
     between,
     choice,
@@ -15,6 +15,7 @@ import Text.Megaparsec
 import qualified Text.Megaparsec.Char as C
 import qualified Text.Megaparsec.Char.Lexer as L
 import UTLC.Data (Closure (..), Context, Term (..), name2Idx)
+import Text.Megaparsec.Char (space1)
 
 type Parser = Parsec Void String
 
@@ -30,28 +31,31 @@ symbol = L.symbol whitespace
 parens :: Parser Closure -> Parser Closure
 parens = between (symbol "(") (symbol ")")
 
+pAtom :: Context -> Parser Closure
+pAtom ctx = pVar ctx <|> parens (pTerm ctx)
+
 pVar :: Context -> Parser Closure
 pVar ctx = do
   x <- lexeme (some C.letterChar)
   let idx = name2Idx ctx x
-  return $ Closure ctx (TmVar idx)
+  pure $ Closure ctx (TmVar idx)
 
 pLam :: Context -> Parser Closure
 pLam ctx' = do
   symbol "\\"
   x <- lexeme (some (C.letterChar <|> C.char '_'))
   symbol "."
-  cls <- pTerm (x : ctx')
-  return $ Closure (ctx cls) (TmAbs x (tm cls))
+  cls <- try (pTerm (x : ctx')) <|> pVar (x : ctx')
+  pure $ Closure (ctx cls) (TmAbs x (tm cls))
 
 pApp :: Context -> Parser Closure
 pApp ctx' = do
-  cls1 <- parens $ pTerm ctx'
-  cls2 <- parens $ pTerm (ctx cls1)
-  return $ Closure (ctx cls2) (TmApp (tm cls1) (tm cls2))
+  cls1 <- pAtom ctx'
+  cls2 <- pAtom (ctx cls1)
+  pure $ Closure (ctx cls2) (TmApp (tm cls1) (tm cls2))
 
 pTerm :: Context -> Parser Closure
-pTerm ctx = pApp ctx <|> pLam ctx <|> pVar ctx
+pTerm ctx = pLam ctx <|> pApp ctx
 
 pSrc :: Parser Closure
 pSrc = between whitespace eof (pTerm [])

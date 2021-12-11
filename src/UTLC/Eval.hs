@@ -38,5 +38,5 @@ eval1 (Closure ctx t) = case t of
   TmApp t1 t2 -> (\s -> Just (TmApp s t2)) =<< eval1 (Closure ctx t1)
   _ -> Nothing
 
-eval :: Closure -> Closure
-eval cls@(Closure ctx t) = maybe cls (eval . Closure ctx) (eval1 cls)
+eval :: Closure -> Term
+eval cls@(Closure ctx t) = maybe t (eval . Closure ctx) (eval1 cls)
