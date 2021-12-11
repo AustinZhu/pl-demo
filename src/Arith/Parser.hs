@@ -32,16 +32,6 @@ parens = between (symbol "(") (symbol ")")
 isKeyword :: String -> Bool
 isKeyword s = s `elem` ["if", "then", "else", "true", "false", "succ", "pred", "0", "iszero", "zero"]
 
-pIf :: Parser Term
-pIf = do
-  _ <- symbol "if"
-  p <- pConst <|> parens pTerm
-  _ <- symbol "then"
-  t1 <- pConst <|> parens pTerm
-  _ <- symbol "else"
-  t2 <- pConst <|> parens pTerm
-  pure $ TmIf p t1 t2
-
 pTrue :: Parser Term
 pTrue = do
   _ <- symbol "true"
@@ -52,24 +42,6 @@ pFalse = do
   _ <- symbol "false"
   pure TmFalse
 
-pSucc :: Parser Term
-pSucc = do
-  _ <- symbol "succ"
-  n <- pConst <|> parens pTerm
-  pure $ TmSucc n
-
-pPred :: Parser Term
-pPred = do
-  _ <- symbol "pred"
-  n <- pConst <|> parens pTerm
-  pure $ TmPred n
-
-pIsZero :: Parser Term
-pIsZero = do
-  _ <- symbol "iszero"
-  n <- pConst <|> parens pTerm
-  pure $ TmIsZero n
-
 pZero :: Parser Term
 pZero = do
   _ <- symbol "0" <|> symbol "zero"
@@ -78,8 +50,39 @@ pZero = do
 pConst :: Parser Term
 pConst = choice [pTrue, pFalse, pZero]
 
+pIf :: Parser Term
+pIf = do
+  _ <- symbol "if"
+  p <- pAtom
+  _ <- symbol "then"
+  t1 <- pAtom
+  _ <- symbol "else"
+  t2 <- pAtom
+  pure $ TmIf p t1 t2
+
+pSucc :: Parser Term
+pSucc = do
+  _ <- symbol "succ"
+  n <- pAtom
+  pure $ TmSucc n
+
+pPred :: Parser Term
+pPred = do
+  _ <- symbol "pred"
+  n <- pAtom
+  pure $ TmPred n
+
+pIsZero :: Parser Term
+pIsZero = do
+  _ <- symbol "iszero"
+  n <- pAtom
+  pure $ TmIsZero n
+
 pTerm :: Parser Term
 pTerm = choice [pIf, pSucc, pPred, pIsZero]
+
+pAtom :: Parser Term
+pAtom = pConst <|> parens pTerm
 
 pSrc :: Parser Term
 pSrc = between whitespace eof pTerm

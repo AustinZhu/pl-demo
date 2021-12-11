@@ -31,9 +31,6 @@ symbol = L.symbol whitespace
 parens :: Parser Closure -> Parser Closure
 parens = between (symbol "(") (symbol ")")
 
-pAtom :: Context -> Parser Closure
-pAtom ctx = pVar ctx <|> parens (pTerm ctx)
-
 pVar :: Context -> Parser Closure
 pVar ctx = do
   x <- lexeme (some C.letterChar)
@@ -56,6 +53,9 @@ pApp ctx' = do
 
 pTerm :: Context -> Parser Closure
 pTerm ctx = pLam ctx <|> pApp ctx
+
+pAtom :: Context -> Parser Closure
+pAtom ctx = pVar ctx <|> parens (pTerm ctx)
 
 pSrc :: Parser Closure
 pSrc = between whitespace eof (pTerm [])
