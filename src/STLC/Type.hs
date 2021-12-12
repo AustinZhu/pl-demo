@@ -26,7 +26,9 @@ typeOf ctx tm = case tm of
   TmString _ -> Just TyString
   -- ⊢ unit : Unit
   TmUnit -> Just TyUnit
+  -- ⊢ succ : Nat → Nat
   TmSucc -> Just (TyArr TyNat TyNat)
+  -- Γ ⊢ t₁ : T₁ ∧ Γ,t₁:T₁ ⊢ t₂ : T₂ ⇒ Γ ⊢ let x=t₁ in t₂ : T₂
   TmLet _ t1 t2 -> case typeOf ctx t1 of
     Just ty1 -> typeOf (ty1 : ctx) t2
     Nothing -> Nothing

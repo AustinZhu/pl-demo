@@ -86,7 +86,7 @@ pUnit :: Parser Term
 pUnit = symbol "unit" $> TmUnit
 
 pConst :: Parser Term
-pConst = pTrue <|> pFalse <|> pUnit<|> pInt <|> pString
+pConst = pTrue <|> pFalse <|> pUnit <|> pInt <|> pString
 
 pSucc :: NameContext -> Parser Term
 pSucc ctx = do

@@ -47,9 +47,10 @@ eval1 t = case t of
     TmInt n -> Just (TmInt (n + 1))
     _ -> eval1 t1 >>= (Just . TmApp TmSucc)
   TmApp t1 t2 -> eval1 t1 >>= (Just . (`TmApp` t2))
-  TmLet x t1 t2 -> if isVal t1
-    then Just (substTm t1 t2)
-    else eval1 t1 >>= Just . (\t1' -> TmLet x t1' t2)
+  TmLet x t1 t2 ->
+    if isVal t1
+      then Just (substTm t1 t2)
+      else eval1 t1 >>= Just . (\t1' -> TmLet x t1' t2)
   _ -> Nothing
 
 eval' :: Term -> Term

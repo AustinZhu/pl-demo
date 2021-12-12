@@ -47,8 +47,12 @@ help l = case l of
   STLC ->
     unlines
       [ "Syntax:",
-        "  <term> ::= x | \\x:<type>.<term> | <term> <term>",
-        "  <type> ::= Bool | <type> -> <type>"
+        "  <term> ::= x | \\x:<type>.<term> | <term> <term> | <term>;<term> | let x=<term> in <term> | <const>",
+        "  <const> ::= <string> | <num> | <bool> | unit",
+        "  <string> ::= \"s\"",
+        "  <bool> ::= true | false",
+        "  <num>  ::= n | succ <num>",
+        "  <type> ::= Nat | String | Bool | Unit | <type> -> <type>"
       ]
   Sub -> ""
   SF -> ""
