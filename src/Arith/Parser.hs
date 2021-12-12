@@ -63,20 +63,17 @@ pIf = do
 pSucc :: Parser Term
 pSucc = do
   _ <- symbol "succ"
-  n <- pAtom
-  pure $ TmSucc n
+  TmSucc <$> pAtom
 
 pPred :: Parser Term
 pPred = do
   _ <- symbol "pred"
-  n <- pAtom
-  pure $ TmPred n
+  TmPred <$> pAtom
 
 pIsZero :: Parser Term
 pIsZero = do
   _ <- symbol "iszero"
-  n <- pAtom
-  pure $ TmIsZero n
+  TmIsZero <$> pAtom
 
 pTerm :: Parser Term
 pTerm = choice [pIf, pSucc, pPred, pIsZero]

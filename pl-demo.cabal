@@ -32,6 +32,7 @@ library
       STLC.Data
       STLC.Eval
       STLC.Parser
+      STLC.Type
       UTLC.Data
       UTLC.Eval
       UTLC.Parser

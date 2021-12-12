@@ -14,7 +14,7 @@ import Text.Megaparsec
   )
 import qualified Text.Megaparsec.Char as C
 import qualified Text.Megaparsec.Char.Lexer as L
-import UTLC.Data (Closure (..), Context, Term (..), name2Idx)
+import UTLC.Data (Closure (..), Context, Term (..), indexOf)
 import Text.Megaparsec.Char (space1)
 
 type Parser = Parsec Void String
@@ -34,7 +34,7 @@ parens = between (symbol "(") (symbol ")")
 pVar :: Context -> Parser Closure
 pVar ctx = do
   x <- lexeme (some C.letterChar)
-  let idx = name2Idx ctx x
+  let idx = indexOf ctx x
   pure $ Closure ctx (TmVar idx)
 
 pLam :: Context -> Parser Closure

@@ -4,6 +4,8 @@ import Arith.Eval (eval)
 import Arith.Parser (parseCode)
 import UTLC.Eval (eval)
 import UTLC.Parser (parseCode)
+import STLC.Eval (eval)
+import STLC.Parser (parseCode)
 
 data Code = Code Lang String
 
@@ -23,7 +25,7 @@ evalCode :: Code -> String
 evalCode (Code l c) = case l of
   Arith -> show $ Arith.Eval.eval (Arith.Parser.parseCode c)
   UTLC -> show $ UTLC.Eval.eval (UTLC.Parser.parseCode c)
-  STLC -> error "not implemented"
+  STLC -> show $ STLC.Eval.eval (STLC.Parser.parseCode c)
   Sub -> error "not implemented"
   SF -> error "not implemented"
   DTLC -> error "not implemented"
