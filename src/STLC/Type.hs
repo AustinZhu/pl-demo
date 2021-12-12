@@ -27,6 +27,9 @@ typeOf ctx tm = case tm of
   -- ⊢ unit : Unit
   TmUnit -> Just TyUnit
   TmSucc -> Just (TyArr TyNat TyNat)
+  TmLet _ t1 t2 -> case typeOf ctx t1 of
+    Just ty1 -> typeOf (ty1 : ctx) t2
+    Nothing -> Nothing
 
 tyck :: Term -> Term
 tyck tm = case typeOf [] tm of

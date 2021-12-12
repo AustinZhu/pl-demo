@@ -28,7 +28,7 @@ type Parser = Parsec Void String
 whitespace :: Parser ()
 whitespace = L.space C.space1 (L.skipLineComment "--") (L.skipBlockComment "{-" "-}")
 
-lexeme :: Parser String -> Parser String
+lexeme :: Parser a -> Parser a
 lexeme = L.lexeme whitespace
 
 symbol :: String -> Parser String
@@ -71,13 +71,13 @@ pTy :: Parser STLC.Syntax.Type
 pTy = try pTyArr <|> pTyBase
 
 pTrue :: Parser Term
-pTrue = symbol "true" $> TmFalse
+pTrue = symbol "true" $> TmTrue
 
 pFalse :: Parser Term
 pFalse = symbol "false" $> TmFalse
 
 pInt :: Parser Term
-pInt = TmInt <$> L.decimal
+pInt = TmInt <$> lexeme L.decimal
 
 pString :: Parser Term
 pString = TmString <$> quotes (some $ C.anySingleBut '"')
@@ -101,30 +101,40 @@ pVar ctx = do
   pure $ TmVar idx
 
 pLam :: NameContext -> Parser Term
-pLam ctx' = do
+pLam ctx = do
   symbol "\\"
   x <- lexeme (some (C.letterChar <|> C.char '_'))
   symbol ":"
   ty <- pTy
   symbol "."
-  tm <- pTerm (x : ctx')
+  tm <- pTerm (x : ctx)
   pure $ TmAbs x ty tm
 
+pLet :: NameContext -> Parser Term
+pLet ctx = do
+  symbol "let"
+  x <- lexeme (some (C.letterChar <|> C.char '_'))
+  symbol "="
+  tm1 <- pTerm (x : ctx)
+  symbol "in"
+  tm2 <- pTerm (x : ctx)
+  pure $ TmLet x tm1 tm2
+
 pApp :: NameContext -> Parser Term
-pApp ctx' = do
-  t1 <- pAtom ctx'
-  t2 <- pAtom ctx'
+pApp ctx = do
+  t1 <- pAtom ctx
+  t2 <- pAtom ctx
   pure $ TmApp t1 t2
 
 pSeq :: NameContext -> Parser Term
-pSeq ctx' = do
-  t1 <- pAtom ctx'
+pSeq ctx = do
+  t1 <- pAtom ctx
   symbol ";"
-  t2 <- pAtom ctx'
+  t2 <- pAtom ctx
   pure $ TmApp (TmAbs "_" TyUnit t2) t1
 
 pTerm :: NameContext -> Parser Term
-pTerm ctx = try (pSeq ctx) <|> pLam ctx <|> pConst <|> pSucc ctx <|> try (pApp ctx) <|> pVar ctx
+pTerm ctx = try (pSeq ctx) <|> pLam ctx <|> pLet ctx <|> pConst <|> pSucc ctx <|> try (pApp ctx) <|> pVar ctx
 
 pAtom :: NameContext -> Parser Term
 pAtom ctx = parens (pTerm ctx) <|> pConst <|> pVar ctx

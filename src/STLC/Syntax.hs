@@ -10,6 +10,7 @@ data Term
   | TmInt Int
   | TmString String
   | TmSucc
+  | TmLet String Term Term
 
 data Type = TyBool | TyNat | TyString | TyUnit | TyArr Type Type deriving (Eq)
 
@@ -37,10 +38,13 @@ prettyTm prec = go (prec /= 0) []
         let (ctx', x') = fresh ctx x
          in showParen p ((concat ["λ", x', ". "] ++) . go False ctx' t1)
       TmApp t1 t2 -> go True ctx t1 . (" " ++) . go True ctx t2
-      TmVar x -> (ctx !! x ++)
+      TmVar x -> (show x ++)
       TmTrue -> ("true" ++)
       TmFalse -> ("false" ++)
       TmUnit -> ("unit" ++)
       TmInt x -> (show x ++)
       TmString x -> (show x ++)
       TmSucc -> ("succ" ++)
+      TmLet x t1 t2 ->
+        let (ctx', x') = fresh ctx x
+         in showParen p ((concat ["let ", x', " = "] ++) . go False ctx' t1 . (" in " ++) . go False ctx' t2)

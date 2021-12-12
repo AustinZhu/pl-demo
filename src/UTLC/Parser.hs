@@ -22,7 +22,7 @@ type Parser = Parsec Void String
 whitespace :: Parser ()
 whitespace = L.space C.space1 (L.skipLineComment "--") (L.skipBlockComment "{-" "-}")
 
-lexeme :: Parser String -> Parser String
+lexeme :: Parser a -> Parser a
 lexeme = L.lexeme whitespace
 
 symbol :: String -> Parser String
@@ -38,11 +38,11 @@ pVar ctx = do
   pure $ TmVar idx
 
 pLam :: Context -> Parser Term
-pLam ctx' = do
+pLam ctx = do
   symbol "\\"
   x <- lexeme (some (C.letterChar <|> C.char '_'))
   symbol "."
-  t <- pTerm (x : ctx')
+  t <- pTerm (x : ctx)
   pure $ TmAbs x t
 
 pApp :: Context -> Parser Term
