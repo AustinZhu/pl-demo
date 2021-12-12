@@ -86,7 +86,7 @@ pUnit :: Parser Term
 pUnit = symbol "unit" $> TmUnit
 
 pConst :: Parser Term
-pConst = pTrue <|> pFalse <|> pInt <|> pString <|> pUnit
+pConst = pTrue <|> pFalse <|> pUnit<|> pInt <|> pString
 
 pSucc :: NameContext -> Parser Term
 pSucc ctx = do
@@ -116,8 +116,15 @@ pApp ctx' = do
   t2 <- pAtom ctx'
   pure $ TmApp t1 t2
 
+pSeq :: NameContext -> Parser Term
+pSeq ctx' = do
+  t1 <- pAtom ctx'
+  symbol ";"
+  t2 <- pAtom ctx'
+  pure $ TmApp (TmAbs "_" TyUnit t2) t1
+
 pTerm :: NameContext -> Parser Term
-pTerm ctx = pLam ctx <|> pConst <|> pSucc ctx <|> try (pApp ctx) <|> pVar ctx
+pTerm ctx = try (pSeq ctx) <|> pLam ctx <|> pConst <|> pSucc ctx <|> try (pApp ctx) <|> pVar ctx
 
 pAtom :: NameContext -> Parser Term
 pAtom ctx = parens (pTerm ctx) <|> pConst <|> pVar ctx
