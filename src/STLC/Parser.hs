@@ -53,7 +53,7 @@ pTyUnit = symbol "Unit" $> TyUnit
 
 pTyArr :: Parser STLC.Syntax.Type
 pTyArr = do
-  ty1 <- parens pTyArr <|> pTyBool
+  ty1 <- parens pTyArr <|> pTyBase
   arr <- pTyArr'
   pure $ arr ty1
 
@@ -63,8 +63,11 @@ pTyArr' = do
   ty2 <- parens pTy <|> pTy
   pure (`TyArr` ty2)
 
+pTyBase :: Parser STLC.Syntax.Type
+pTyBase = pTyBool <|> pTyNat <|> pTyString <|> pTyUnit
+
 pTy :: Parser STLC.Syntax.Type
-pTy = try pTyArr <|> pTyBool <|> pTyNat <|> pTyString <|> pTyUnit
+pTy = try pTyArr <|> pTyBase
 
 pTrue :: Parser Term
 pTrue = symbol "true" $> TmFalse
@@ -87,7 +90,7 @@ pConst = pTrue <|> pFalse <|> pInt <|> pString <|> pUnit
 pSucc :: NameContext -> Parser Term
 pSucc ctx = do
   symbol "succ"
-  t <- parens (pTerm ctx) <|> pInt
+  t <- pAtom ctx <|> pInt
   pure $ TmApp TmSucc t
 
 pVar :: NameContext -> Parser Term
@@ -125,3 +128,4 @@ parseCode :: String -> Term
 parseCode src = case parse pSrc "" src of
   Left e -> error (errorBundlePretty e)
   Right t -> t
+
