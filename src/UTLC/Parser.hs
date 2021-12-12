@@ -12,10 +12,10 @@ import Text.Megaparsec
     some,
     (<|>),
   )
+import Text.Megaparsec.Char (space1)
 import qualified Text.Megaparsec.Char as C
 import qualified Text.Megaparsec.Char.Lexer as L
 import UTLC.Syntax (Context, Term (..), indexOf)
-import Text.Megaparsec.Char (space1)
 
 type Parser = Parsec Void String
 

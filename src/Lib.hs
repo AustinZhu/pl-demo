@@ -2,10 +2,10 @@ module Lib where
 
 import Arith.Eval (eval)
 import Arith.Parser (parseCode)
-import UTLC.Eval (eval)
-import UTLC.Parser (parseCode)
 import STLC.Eval (eval)
 import STLC.Parser (parseCode)
+import UTLC.Eval (eval)
+import UTLC.Parser (parseCode)
 
 data Code = Code Lang String
 
@@ -44,7 +44,7 @@ help l = case l of
       [ "Syntax:",
         "  <term> ::= x | \\x.<term> | <term> <term>"
       ]
-  STLC -> 
+  STLC ->
     unlines
       [ "Syntax:",
         "  <term> ::= x | \\x:<type>.<term> | <term> <term>",

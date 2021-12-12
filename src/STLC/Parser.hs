@@ -12,15 +12,16 @@ import Text.Megaparsec
     between,
     choice,
     errorBundlePretty,
+    many,
     optional,
     parse,
     some,
-    (<|>), many
+    (<|>),
   )
+import qualified Text.Megaparsec as C
 import Text.Megaparsec.Char (space1)
 import qualified Text.Megaparsec.Char as C
 import qualified Text.Megaparsec.Char.Lexer as L
-import qualified Text.Megaparsec as C
 
 type Parser = Parsec Void String
 
@@ -128,4 +129,3 @@ parseCode :: String -> Term
 parseCode src = case parse pSrc "" src of
   Left e -> error (errorBundlePretty e)
   Right t -> t
-
