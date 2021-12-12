@@ -20,6 +20,13 @@ typeOf ctx tm = case tm of
   TmTrue -> Just TyBool
   -- ⊢ false : Bool
   TmFalse -> Just TyBool
+  -- ⊢ n : Nat
+  TmInt _ -> Just TyNat
+  -- ⊢ s : String
+  TmString _ -> Just TyString
+  -- ⊢ unit : Unit
+  TmUnit -> Just TyUnit
+  TmSucc -> Just (TyArr TyNat TyNat)
 
 tyck :: Term -> Term
 tyck tm = case typeOf [] tm of

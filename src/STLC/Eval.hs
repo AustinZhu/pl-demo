@@ -28,6 +28,9 @@ isVal t = case t of
   TmAbs {} -> True
   TmTrue -> True
   TmFalse -> True
+  TmUnit -> True
+  TmString _ -> True
+  TmInt _ -> True
   _ -> False
 
 -- | Beta reduction
@@ -40,7 +43,10 @@ eval1 t = case t of
     if isVal t2
       then Just (substTm t2 t1)
       else eval1 t2 >>= (Just . TmApp lam)
-  TmApp t1 t2 -> eval1 t1 >>= (\s -> Just (TmApp s t2))
+  TmApp TmSucc t1 -> case t1 of
+    TmInt n -> Just (TmInt (n + 1))
+    _ -> eval1 t1 >>= (Just . TmApp TmSucc)
+  TmApp t1 t2 -> eval1 t1 >>= (Just . (`TmApp` t2))
   _ -> Nothing
 
 eval' :: Term -> Term

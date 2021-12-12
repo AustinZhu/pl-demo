@@ -5,10 +5,13 @@ data Term
   | TmAbs String Type Term
   | TmApp Term Term
   | TmTrue
-  | TmFalse 
-  deriving (Eq)
+  | TmFalse
+  | TmUnit
+  | TmInt Int
+  | TmString String
+  | TmSucc
 
-data Type = TyBool | TyArr Type Type deriving (Eq)
+data Type = TyBool | TyNat | TyString | TyUnit | TyArr Type Type deriving (Eq)
 
 type NameContext = [String]
 
@@ -37,3 +40,7 @@ prettyTm prec = go (prec /= 0) []
       TmVar x -> (ctx !! x ++)
       TmTrue -> ("true" ++)
       TmFalse -> ("false" ++)
+      TmUnit -> ("unit" ++)
+      TmInt x -> (show x ++)
+      TmString x -> (show x ++)
+      TmSucc -> ("succ" ++)

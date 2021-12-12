@@ -15,11 +15,12 @@ import Text.Megaparsec
     optional,
     parse,
     some,
-    (<|>),
+    (<|>), many
   )
 import Text.Megaparsec.Char (space1)
 import qualified Text.Megaparsec.Char as C
 import qualified Text.Megaparsec.Char.Lexer as L
+import qualified Text.Megaparsec as C
 
 type Parser = Parsec Void String
 
@@ -35,8 +36,20 @@ symbol = L.symbol whitespace
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
 
+quotes :: Parser a -> Parser a
+quotes = between (symbol "\"") (symbol "\"")
+
 pTyBool :: Parser STLC.Syntax.Type
 pTyBool = symbol "Bool" $> TyBool
+
+pTyNat :: Parser STLC.Syntax.Type
+pTyNat = symbol "Nat" $> TyNat
+
+pTyString :: Parser STLC.Syntax.Type
+pTyString = symbol "String" $> TyString
+
+pTyUnit :: Parser STLC.Syntax.Type
+pTyUnit = symbol "Unit" $> TyUnit
 
 pTyArr :: Parser STLC.Syntax.Type
 pTyArr = do
@@ -51,20 +64,31 @@ pTyArr' = do
   pure (`TyArr` ty2)
 
 pTy :: Parser STLC.Syntax.Type
-pTy = try pTyArr <|> pTyBool
+pTy = try pTyArr <|> pTyBool <|> pTyNat <|> pTyString <|> pTyUnit
 
 pTrue :: Parser Term
-pTrue = do
-  symbol "true"
-  pure TmTrue
+pTrue = symbol "true" $> TmFalse
 
 pFalse :: Parser Term
-pFalse = do
-  symbol "false"
-  pure TmFalse
+pFalse = symbol "false" $> TmFalse
+
+pInt :: Parser Term
+pInt = TmInt <$> L.decimal
+
+pString :: Parser Term
+pString = TmString <$> quotes (some $ C.anySingleBut '"')
+
+pUnit :: Parser Term
+pUnit = symbol "unit" $> TmUnit
 
 pConst :: Parser Term
-pConst = pTrue <|> pFalse
+pConst = pTrue <|> pFalse <|> pInt <|> pString <|> pUnit
+
+pSucc :: NameContext -> Parser Term
+pSucc ctx = do
+  symbol "succ"
+  t <- parens (pTerm ctx) <|> pInt
+  pure $ TmApp TmSucc t
 
 pVar :: NameContext -> Parser Term
 pVar ctx = do
@@ -89,7 +113,7 @@ pApp ctx' = do
   pure $ TmApp t1 t2
 
 pTerm :: NameContext -> Parser Term
-pTerm ctx = pLam ctx <|> pConst <|> try (pApp ctx) <|> pVar ctx
+pTerm ctx = pLam ctx <|> pConst <|> pSucc ctx <|> try (pApp ctx) <|> pVar ctx
 
 pAtom :: NameContext -> Parser Term
 pAtom ctx = parens (pTerm ctx) <|> pConst <|> pVar ctx
