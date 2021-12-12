@@ -14,7 +14,7 @@ import Text.Megaparsec
   )
 import qualified Text.Megaparsec.Char as C
 import qualified Text.Megaparsec.Char.Lexer as L
-import UTLC.Data (Closure (..), Context, Term (..), indexOf)
+import UTLC.Syntax (Context, Term (..), indexOf)
 import Text.Megaparsec.Char (space1)
 
 type Parser = Parsec Void String
@@ -28,39 +28,39 @@ lexeme = L.lexeme whitespace
 symbol :: String -> Parser String
 symbol = L.symbol whitespace
 
-parens :: Parser Closure -> Parser Closure
+parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
 
-pVar :: Context -> Parser Closure
+pVar :: Context -> Parser Term
 pVar ctx = do
   x <- lexeme (some C.letterChar)
   let idx = indexOf ctx x
-  pure $ Closure ctx (TmVar idx)
+  pure $ TmVar idx
 
-pLam :: Context -> Parser Closure
+pLam :: Context -> Parser Term
 pLam ctx' = do
   symbol "\\"
   x <- lexeme (some (C.letterChar <|> C.char '_'))
   symbol "."
-  cls <- try (pTerm (x : ctx')) <|> pVar (x : ctx')
-  pure $ Closure (ctx cls) (TmAbs x (tm cls))
+  t <- pTerm (x : ctx')
+  pure $ TmAbs x t
 
-pApp :: Context -> Parser Closure
-pApp ctx' = do
-  cls1 <- pAtom ctx'
-  cls2 <- pAtom (ctx cls1)
-  pure $ Closure (ctx cls2) (TmApp (tm cls1) (tm cls2))
+pApp :: Context -> Parser Term
+pApp ctx = do
+  t1 <- pAtom ctx
+  t2 <- pAtom ctx
+  pure $ TmApp t1 t2
 
-pTerm :: Context -> Parser Closure
-pTerm ctx = pLam ctx <|> pApp ctx
+pTerm :: Context -> Parser Term
+pTerm ctx = pLam ctx <|> try (pApp ctx) <|> pVar ctx
 
-pAtom :: Context -> Parser Closure
-pAtom ctx = pVar ctx <|> parens (pTerm ctx)
+pAtom :: Context -> Parser Term
+pAtom ctx = parens (pTerm ctx) <|> pVar ctx
 
-pSrc :: Parser Closure
+pSrc :: Parser Term
 pSrc = between whitespace eof (pTerm [])
 
-parseCode :: String -> Closure
+parseCode :: String -> Term
 parseCode src = case parse pSrc "" src of
   Left e -> error (errorBundlePretty e)
   Right t -> t

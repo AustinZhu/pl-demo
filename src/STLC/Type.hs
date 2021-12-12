@@ -1,23 +1,27 @@
 module STLC.Type (tyck) where
 
-import STLC.Data (Term (..), Type (..))
+import STLC.Syntax (Term (..), Type (..))
 
 type TypeContext = [Type]
 
-typeOf :: TypeContext -> Term -> Either Term Type
+typeOf :: TypeContext -> Term -> Maybe Type
 typeOf ctx tm = case tm of
-  TmVar n -> if n < length ctx then Right (ctx !! n) else Left tm
-  TmAbs x ty t1 -> typeOf (ty : ctx) t1 >>= Right . TyArr ty
+  -- x:T ∈ Γ ⇒ Γ ⊢ x : T
+  TmVar n -> if n < length ctx then Just (ctx !! n) else Nothing
+  -- Γ,x:T₁ ⊢ t₂ : T₁→T₂ ⇒ Γ ⊢ λx:T₁.t₂ : T₁→T₂
+  TmAbs _ ty t1 -> typeOf (ty : ctx) t1 >>= Just . TyArr ty
+  -- Γ ⊢ t₁ : T₁₁→T₁₂ ∧ Γ ⊢ t₂ : T₁₁ ⇒ Γ ⊢ t₁ t₂ : T₁₂
   TmApp t1 t2 -> case typeOf ctx t1 of
-    Left tm -> Left tm
-    Right (TyArr ty1 ty2) -> case typeOf ctx t2 of
-      Left tm -> Left tm
-      Right ty -> if ty == ty1 then Right ty2 else Left tm
-    _ -> Left tm
-  TmTrue -> Right TyBool
-  TmFalse -> Right TyBool
+    Just (TyArr ty1 ty2) -> case typeOf ctx t2 of
+      Just ty -> if ty == ty1 then Just ty2 else Nothing
+      Nothing -> Nothing
+    _ -> Nothing
+  -- ⊢ true : Bool
+  TmTrue -> Just TyBool
+  -- ⊢ false : Bool
+  TmFalse -> Just TyBool
 
 tyck :: Term -> Term
 tyck tm = case typeOf [] tm of
-  Right _ -> tm
-  Left term -> error ("Failed to type check " ++ show term)
+  Just _ -> tm
+  Nothing -> error "failed to type check"

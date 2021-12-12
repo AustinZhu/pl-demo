@@ -39,8 +39,17 @@ help l = case l of
         "  <bool> ::= true | false",
         "  <num>  ::= 0 | succ <num>"
       ]
-  UTLC -> ""
-  STLC -> ""
+  UTLC ->
+    unlines
+      [ "Syntax:",
+        "  <term> ::= x | \\x.<term> | <term> <term>"
+      ]
+  STLC -> 
+    unlines
+      [ "Syntax:",
+        "  <term> ::= x | \\x:<type>.<term> | <term> <term>",
+        "  <type> ::= Bool | <type> -> <type>"
+      ]
   Sub -> ""
   SF -> ""
   DTLC -> ""

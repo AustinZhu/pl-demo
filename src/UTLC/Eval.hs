@@ -1,6 +1,6 @@
 module UTLC.Eval (eval) where
 
-import UTLC.Data (Closure (..), Context, Term (..))
+import UTLC.Syntax (Context, Term (..))
 
 -- | Shift the de Bruijn indices of a term by the given amount.
 shift :: Int -> Term -> Term
@@ -20,8 +20,8 @@ subst j s t = walk 0 t
       TmAbs x t1 -> TmAbs x (walk (c + 1) t1)
       TmApp t1 t2 -> TmApp (walk c t1) (walk c t2)
 
-isVal :: Context -> Term -> Bool
-isVal ctx t = case t of
+isVal :: Term -> Bool
+isVal t = case t of
   TmAbs _ _ -> True
   _ -> False
 
@@ -29,14 +29,14 @@ isVal ctx t = case t of
 substTm :: Term -> Term -> Term
 substTm s t = shift (-1) (subst 0 (shift 1 s) t)
 
-eval1 :: Closure -> Maybe Term
-eval1 (Closure ctx t) = case t of
-  TmApp lam@(TmAbs x t1) t2 ->
-    if isVal ctx t2
+eval1 :: Term -> Maybe Term
+eval1 t = case t of
+  TmApp lam@(TmAbs _ t1) t2 ->
+    if isVal t2
       then Just (substTm t2 t1)
-      else (Just . TmApp lam) =<< eval1 (Closure ctx t2)
-  TmApp t1 t2 -> (\s -> Just (TmApp s t2)) =<< eval1 (Closure ctx t1)
+      else eval1 t2 >>= (Just . TmApp lam)
+  TmApp t1 t2 -> eval1 t1 >>= (Just . (`TmApp` t2))
   _ -> Nothing
 
-eval :: Closure -> Term
-eval cls@(Closure ctx t) = maybe t (eval . Closure ctx) (eval1 cls)
+eval :: Term -> Term
+eval t = maybe t eval (eval1 t)

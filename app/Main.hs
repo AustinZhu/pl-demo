@@ -1,7 +1,7 @@
 module Main where
 
 import Control.Exception (catch)
-import GHC.Exception (ErrorCall (..))
+import GHC.Exception (ErrorCall (..), prettyCallStack)
 import GHC.IO.Handle (hFlush)
 import Lib (Code (Code), Lang (..), evalCode, help, mapLang)
 import System.Environment (getArgs)
@@ -56,7 +56,7 @@ helpMsg =
     ]
 
 handler :: ErrorCall -> IO ()
-handler = prompt . show
+handler (ErrorCallWithLocation msg _) = prompt msg
 
 prompt :: String -> IO ()
 prompt text = do

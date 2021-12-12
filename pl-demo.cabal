@@ -29,13 +29,13 @@ library
       Arith.Eval
       Arith.Parser
       Lib
-      STLC.Data
       STLC.Eval
       STLC.Parser
+      STLC.Syntax
       STLC.Type
-      UTLC.Data
       UTLC.Eval
       UTLC.Parser
+      UTLC.Syntax
   other-modules:
       Paths_pl_demo
   hs-source-dirs:
