@@ -9,7 +9,7 @@ import STLC.Parser (parseCode)
 
 data Code = Code Lang String
 
-data Lang = Arith | UTLC | STLC | Sub | SF | DTLC
+data Lang = Arith | UTLC | STLC | Sub | SF | DTLC deriving (Show)
 
 mapLang :: String -> Maybe Lang
 mapLang s = case s of

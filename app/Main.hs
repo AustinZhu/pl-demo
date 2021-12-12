@@ -38,7 +38,7 @@ repl l = do
   case input of
     "\\q" -> exitSuccess
     _ -> do
-      catch (prompt $ evalCode (Code l input)) handler
+      catch (prompt $ evalCode (Code l input)) (handler l)
       repl l
 
 exec :: Lang -> FilePath -> IO ()
@@ -55,8 +55,8 @@ helpMsg =
       "  -f, --file <path> Specify the input file, will run repl if not sepcified"
     ]
 
-handler :: ErrorCall -> IO ()
-handler (ErrorCallWithLocation msg _) = prompt msg
+handler :: Lang -> ErrorCall -> IO ()
+handler l (ErrorCallWithLocation msg _) = prompt (show l ++ ": " ++ msg)
 
 prompt :: String -> IO ()
 prompt text = do
