@@ -1,5 +1,6 @@
 module STLC.Type (tyck) where
 
+import Control.Applicative ((<**>))
 import STLC.Syntax (Term (..), Type (..))
 
 type TypeContext = [Type]
@@ -32,6 +33,13 @@ typeOf ctx tm = case tm of
   TmLet _ t1 t2 -> case typeOf ctx t1 of
     Just ty1 -> typeOf (ty1 : ctx) t2
     Nothing -> Nothing
+  TmPair t1 t2 -> typeOf ctx t2 <**> (typeOf ctx t1 <**> Just TyPair)
+  TmFst t -> case typeOf ctx t of
+    Just (TyPair ty1 ty2) -> Just ty1
+    _ -> Nothing
+  TmSnd t -> case typeOf ctx t of
+    Just (TyPair ty1 ty2) -> Just ty2
+    _ -> Nothing
 
 tyck :: Term -> Term
 tyck tm = case typeOf [] tm of

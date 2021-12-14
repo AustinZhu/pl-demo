@@ -15,7 +15,10 @@ shift i t = walk 0 t
 
 -- | Substitute term s for the variables of index j in term t.
 subst :: Int -> Term -> Term -> Term
-subst j s t = walk 0 t
+subst j s t = case t of
+  TmFst t' -> TmFst (walk 0 t')
+  TmSnd t' -> TmSnd (walk 0 t'
+  _ -> walk 0 t
   where
     walk c t = case t of
       TmVar x -> if x == j + c then shift c s else TmVar x
@@ -31,6 +34,7 @@ isVal t = case t of
   TmUnit -> True
   TmString _ -> True
   TmInt _ -> True
+  TmPair t1 t2 -> isVal t1 && isVal t2
   _ -> False
 
 -- | Beta reduction
@@ -51,10 +55,23 @@ eval1 t = case t of
     if isVal t1
       then Just (substTm t1 t2)
       else eval1 t1 >>= Just . (\t1' -> TmLet x t1' t2)
+  TmPair t1 t2 ->
+    if isVal t2
+      then eval1 t1 >>= Just . (`TmPair` t2)
+      else
+        if isVal t1
+          then Just (TmPair t1 t2)
+          else eval1 t2 >>= Just . TmPair t1
+  TmFst t1 -> case t1 of
+    TmPair t1' t2 -> Just t1'
+    _ -> eval1 t1 >>= (Just . TmFst)
+  TmSnd t1 -> case t1 of
+    TmPair t1' t2 -> Just t2
+    _ -> eval1 t1 >>= (Just . TmSnd)
   _ -> Nothing
-
-eval' :: Term -> Term
-eval' t = maybe t eval' (eval1 t)
 
 eval :: Term -> Term
 eval t = eval' (tyck t)
+  where
+    eval' :: Term -> Term
+    eval' t = maybe t eval' (eval1 t)

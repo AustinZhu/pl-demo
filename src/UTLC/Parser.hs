@@ -48,6 +48,7 @@ pLam ctx = do
 pApp :: Context -> Parser Term
 pApp ctx = do
   t1 <- pAtom ctx
+  C.space
   t2 <- pAtom ctx
   pure $ TmApp t1 t2
 
