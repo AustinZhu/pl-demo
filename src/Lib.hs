@@ -35,9 +35,9 @@ help l = case l of
   Arith ->
     unlines
       [ "Syntax:",
-        "  <term> ::= <bool> | if <term> then <term> else <term> | iszero <term> | succ <term> | pred <term> | 0",
+        "  <term> ::= <bool> | if <term> then <term> else <term> | iszero <term> | succ <term> | pred <term> | <num>",
         "  <bool> ::= true | false",
-        "  <num>  ::= 0 | succ <num>"
+        "  <num>  ::= n"
       ]
   UTLC ->
     unlines
@@ -47,12 +47,14 @@ help l = case l of
   STLC ->
     unlines
       [ "Syntax:",
-        "  <term> ::= x | \\x:<type>.<term> | <term> <term> | <term>;<term> | let x=<term> in <term> | <const>",
+        "  <term> ::= <const> | x | \\x:<type>.<term> | <term> <term> | <term>;<term> | let x=<term> in <term> | succ <term>",
+        "          | if <term> then <term> else <term> | fix <term> | letrec x:<type>=<term> in <term> | inr <term> | inl <term>",
+        "          | case <term> of inl x => <term>|inr x => <term> | {<term>, <term>} | <term>.1 | <term>.2",
         "  <const> ::= <string> | <num> | <bool> | unit",
         "  <string> ::= \"s\"",
         "  <bool> ::= true | false",
-        "  <num>  ::= n | succ <num>",
-        "  <type> ::= Nat | String | Bool | Unit | <type> -> <type>"
+        "  <num>  ::= n",
+        "  <type> ::= Nat | String | Bool | Unit | <type> -> <type> | <type> * <type> | <type> + <type>"
       ]
   Sub -> ""
   SF -> ""

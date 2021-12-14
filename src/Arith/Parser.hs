@@ -20,13 +20,13 @@ type Parser = Parsec Void String
 whitespace :: Parser ()
 whitespace = L.space C.space1 (L.skipLineComment "--") (L.skipBlockComment "{-" "-}")
 
-lexeme :: Parser String -> Parser String
+lexeme :: Parser a -> Parser a
 lexeme = L.lexeme whitespace
 
 symbol :: String -> Parser String
 symbol = L.symbol whitespace
 
-parens :: Parser Term -> Parser Term
+parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
 
 isKeyword :: String -> Bool
@@ -42,13 +42,11 @@ pFalse = do
   _ <- symbol "false"
   pure TmFalse
 
-pZero :: Parser Term
-pZero = do
-  _ <- symbol "0" <|> symbol "zero"
-  pure TmZero
+pInt :: Parser Term
+pInt = TmInt <$> lexeme L.decimal
 
 pConst :: Parser Term
-pConst = choice [pTrue, pFalse, pZero]
+pConst = pTrue <|> pFalse <|> pInt
 
 pIf :: Parser Term
 pIf = do
@@ -76,7 +74,7 @@ pIsZero = do
   TmIsZero <$> pAtom
 
 pTerm :: Parser Term
-pTerm = choice [pIf, pSucc, pPred, pIsZero]
+pTerm = choice [pConst, pIf, pSucc, pPred, pIsZero]
 
 pAtom :: Parser Term
 pAtom = pConst <|> parens pTerm

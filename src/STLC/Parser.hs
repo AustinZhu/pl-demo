@@ -229,7 +229,7 @@ pInit :: NameContext -> Parser Term
 pInit ctx = pAtom ctx <**> (pSeq ctx <|> pFst <|> pSnd <|> try (pApp ctx) <|> pure id)
 
 pTerm :: NameContext -> Parser Term
-pTerm ctx = pLam ctx <|> pLetRec ctx <|> pLet ctx <|> pFix ctx <|> pIf ctx <|> pCase ctx <|> pSucc ctx <|> pInl ctx <|> pInr ctx <|> pInit ctx <|> pPair ctx
+pTerm ctx = choice [pLam ctx, pLetRec ctx, pLet ctx, pFix ctx, pIf ctx, pCase ctx, pSucc ctx, pInl ctx, pInr ctx, pInit ctx, pPair ctx]
 
 pAtom :: NameContext -> Parser Term
 pAtom ctx = parens (pTerm ctx) <|> pConst <|> pVar ctx
