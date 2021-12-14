@@ -9,6 +9,7 @@ import System.Exit (exitFailure)
 import Text.Megaparsec
   ( MonadParsec (eof, try),
     Parsec,
+    anySingleBut,
     between,
     choice,
     errorBundlePretty,
@@ -17,7 +18,6 @@ import Text.Megaparsec
     parse,
     some,
     (<|>),
-    anySingleBut
   )
 import qualified Text.Megaparsec.Char as C
 import qualified Text.Megaparsec.Char.Lexer as L
@@ -34,21 +34,22 @@ symbol :: String -> Parser String
 symbol = L.symbol whitespace
 
 keywords :: [String]
-keywords = ["let", "in", "if", "then", "else", "true", "false", "Nat", "String", "Bool", "Unit", "unit", "succ", "fix", "letrec", "case", "of", "inl", "inr"]
+keywords = ["let", "in", "if", "then", "else", "true", "false", "Nat", "String", "Bool", "Unit", "unit", "succ", "iszero", "pred", "fix", "letrec", "case", "of", "inl", "inr"]
 
 variable :: Parser String
 variable = do
   first <- C.letterChar
   rest <- many (C.alphaNumChar <|> C.char '_')
-  let name = (first : rest) in if name `elem` keywords
-    then fail (show name ++ " is a keyword")
-    else pure (first : rest)
+  let name = (first : rest)
+   in if name `elem` keywords
+        then fail (show name ++ " is a keyword")
+        else pure (first : rest)
 
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
 
 quotes :: Parser a -> Parser a
-quotes = between (symbol "\"") (symbol "\"")
+quotes = between (C.char '"') (symbol "\"")
 
 pTyBool :: Parser Type
 pTyBool = symbol "Bool" $> TyBool
@@ -78,7 +79,7 @@ pTyVariant :: Parser (Type -> Type)
 pTyVariant = pTyBinary "+" TyVariant
 
 pTyBase :: Parser Type
-pTyBase = pTyBool <|> pTyNat <|> pTyString <|> pTyUnit
+pTyBase = pTyBool <|> pTyNat <|> pTyUnit
 
 pTyAtom :: Parser Type
 pTyAtom = parens pTy <|> pTyBase
@@ -97,9 +98,7 @@ pInt = TmInt <$> lexeme L.decimal
 
 pString :: Parser Term
 pString = do
-  C.char '"'
-  str <- many (anySingleBut '"')
-  C.char '"'
+  str <- quotes $ many (anySingleBut '"')
   pure $ TmString str
 
 pUnit :: Parser Term
@@ -114,18 +113,36 @@ pSucc ctx = do
   t <- pAtom ctx
   pure $ TmApp TmSucc t
 
+pPred :: NameContext -> Parser Term
+pPred ctx = do
+  symbol "pred"
+  t <- pAtom ctx
+  pure $ TmApp TmPred t
+
+pIsZero :: NameContext -> Parser Term
+pIsZero ctx = do
+  symbol "iszero"
+  t <- pAtom ctx
+  pure $ TmApp TmIsZero t
+
+pLen :: NameContext -> Parser Term
+pLen ctx = do
+  symbol "len"
+  t <- pAtom ctx
+  pure $ TmApp TmLen t
+
 pPair :: NameContext -> Parser Term
 pPair ctx = do
   symbol "{"
-  t1 <- pAtom ctx
+  t1 <- pTerm ctx
   symbol ","
-  t2 <- pAtom ctx
+  t2 <- pTerm ctx
   symbol "}"
   pure $ TmPair t1 t2
 
 pVar :: NameContext -> Parser Term
 pVar ctx = do
-  x <- variable
+  x <- lexeme variable
   let idx = indexOf ctx x
   pure $ TmVar idx
 
@@ -144,19 +161,19 @@ pLet ctx = do
   symbol "let"
   x <- lexeme variable
   symbol "="
-  tm1 <- pTerm (x : ctx)
+  tm1 <- pTerm ctx
   symbol "in"
-  tm2 <- pTerm (x : ctx)
+  tm2 <- pAtom (x : ctx)
   pure $ TmLet x tm1 tm2
 
 pIf :: NameContext -> Parser Term
 pIf ctx = do
   symbol "if"
-  tm1 <- pTerm ctx
+  tm1 <- pAtom ctx
   symbol "then"
-  tm2 <- pTerm ctx
+  tm2 <- pAtom ctx
   symbol "else"
-  tm3 <- pTerm ctx
+  tm3 <- pAtom ctx
   pure $ TmIf tm1 tm2 tm3
 
 pLetRec :: NameContext -> Parser Term
@@ -168,19 +185,19 @@ pLetRec ctx = do
   symbol "="
   tm1 <- pTerm (x : ctx)
   symbol "in"
-  tm2 <- pTerm (x : ctx)
-  pure $ TmLetRec x ty tm1 tm2
+  tm2 <- pAtom (x : ctx)
+  pure $ TmLet x (TmFix (TmAbs x ty tm1)) tm2
 
 pApp :: NameContext -> Parser (Term -> Term)
 pApp ctx = do
-  C.hspace1
+  C.hspace
   t2 <- pAtom ctx
   pure (`TmApp` t2)
 
 pSeq :: NameContext -> Parser (Term -> Term)
 pSeq ctx = do
   symbol ";"
-  t2 <- pAtom ctx
+  t2 <- pTerm ctx
   pure $ TmApp (TmAbs "_" TyUnit t2)
 
 pFst :: Parser (Term -> Term)
@@ -206,15 +223,15 @@ pInr ctx = do
 pCase :: NameContext -> Parser Term
 pCase ctx = do
   symbol "case"
-  t <- pTerm ctx
+  t <- pAtom ctx
   symbol "of"
   symbol "inl"
-  xl <- variable
+  xl <- lexeme variable
   symbol "=>"
   tl <- pTerm (xl : ctx)
   symbol "|"
   symbol "inr"
-  xr <- variable
+  xr <- lexeme variable
   symbol "=>"
   tr <- pTerm (xr : ctx)
   pure $ TmCase t (xl, tl) (xr, tr)
@@ -226,13 +243,15 @@ pFix ctx = do
   pure $ TmFix t
 
 pInit :: NameContext -> Parser Term
-pInit ctx = pAtom ctx <**> (pSeq ctx <|> pFst <|> pSnd <|> try (pApp ctx) <|> pure id)
+pInit ctx = pAtom ctx <**> (pSeq ctx <|> pFst <|> pSnd <|> try (pApp ctx) <|> return id)
 
 pTerm :: NameContext -> Parser Term
-pTerm ctx = choice [pLam ctx, pLetRec ctx, pLet ctx, pFix ctx, pIf ctx, pCase ctx, pSucc ctx, pInl ctx, pInr ctx, pInit ctx, pPair ctx]
+pTerm ctx =
+  foldl1 (<|>) $
+    map (\p -> p ctx) [pLam, pLetRec, pLet, pFix, pIf, pCase, pSucc, pInl, pInr, pIsZero, pPred, pSucc, pLen, pInit, pPair]
 
 pAtom :: NameContext -> Parser Term
-pAtom ctx = parens (pTerm ctx) <|> pConst <|> pVar ctx
+pAtom ctx = parens (pTerm ctx) <|> pLam ctx <|> pPair ctx <|> pConst <|> pVar ctx
 
 pSrc :: Parser Term
 pSrc = between whitespace eof (pTerm [])

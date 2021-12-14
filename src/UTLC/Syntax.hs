@@ -4,6 +4,15 @@ data Term
   = TmVar Int
   | TmAbs String Term
   | TmApp Term Term
+  | TmTrue
+  | TmFalse
+  | TmInt Int
+  | TmIf Term Term Term
+  | TmIsZero Term
+  | TmSucc Term
+  | TmPred Term
+  | TmLet String Term Term
+  | TmFix Term
 
 type Context = [String]
 
@@ -28,5 +37,14 @@ prettyTm prec = go (prec /= 0) []
       TmAbs x t1 ->
         let (ctx', x') = fresh ctx x
          in showParen p ((concat ["λ", x', ". "] ++) . go False ctx' t1)
-      TmApp t1 t2 -> go True ctx t1 . (" " ++) . go True ctx t2
+      TmApp t1 t2 -> showParen p $ go True ctx t1 . (" " ++) . go True ctx t2
       TmVar x -> (ctx !! x ++)
+      TmTrue -> ("true" ++)
+      TmFalse -> ("false" ++)
+      TmIsZero n -> showParen p (("iszero " ++) . go True ctx n)
+      TmIf p1 t1 t2 -> showParen p (("if " ++) . go True ctx p1 . (" then " ++) . go True ctx t1 . (" else " ++) . go True ctx t2)
+      TmPred n -> showParen p (("pred " ++) . go True ctx n)
+      TmSucc n -> showParen p (("succ " ++) . go True ctx n)
+      TmInt i -> (show i ++)
+      TmLet x t1 t2 -> showParen p ((concat ["let ", x, " = "] ++) . go True ctx t1 . (" in " ++) . go False ctx t2)
+      TmFix t1 -> showParen p (("fix " ++) . go True ctx t1)

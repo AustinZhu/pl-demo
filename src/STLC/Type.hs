@@ -29,6 +29,11 @@ typeOf ctx tm = case tm of
   TmUnit -> Just TyUnit
   -- ⊢ succ : Nat → Nat
   TmSucc -> Just (TyArr TyNat TyNat)
+  -- ⊢ pred : Nat → Nat
+  TmPred -> Just (TyArr TyNat TyNat)
+  -- ⊢ iszero : Nat → Bool
+  TmIsZero -> Just (TyArr TyNat TyBool)
+  TmLen -> Just (TyArr TyString TyNat)
   -- Γ ⊢ t₁ : T₁ ∧ Γ,t₁:T₁ ⊢ t₂ : T₂ ⇒ Γ ⊢ let x=t₁ in t₂ : T₂
   TmLet _ t1 t2 -> case typeOf ctx t1 of
     Just ty1 -> typeOf (ty1 : ctx) t2
@@ -36,7 +41,6 @@ typeOf ctx tm = case tm of
   TmIf t1 t2 t3 -> case typeOf ctx t1 of
     Just TyBool -> let ty = typeOf ctx t2 in if ty == typeOf ctx t3 then ty else Nothing
     _ -> Nothing
-  TmLetRec x ty t1 t2 -> typeOf ctx $ TmLet x (TmFix (TmAbs x ty t1)) t2
   TmPair t1 t2 -> TyPair <$> typeOf ctx t1 <*> typeOf ctx t2
   TmFst t -> case typeOf ctx t of
     Just (TyPair ty1 ty2) -> Just ty1

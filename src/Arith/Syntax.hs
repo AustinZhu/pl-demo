@@ -1,4 +1,4 @@
-module Arith.Data where
+module Arith.Syntax where
 
 data Term
   = TmTrue
@@ -8,19 +8,6 @@ data Term
   | TmPred Term
   | TmIsZero Term
   | TmInt Int
-
-isNum :: Term -> Bool
-isNum t = case t of
-  TmInt _ -> True
-  TmSucc t1 -> isNum t1
-  _ -> False
-
-isVal :: Term -> Bool
-isVal t = case t of
-  TmTrue -> True
-  TmFalse -> True
-  TmInt _ -> True
-  _ -> isNum t
 
 instance Show Term where showsPrec = prettyTm
 

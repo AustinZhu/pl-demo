@@ -9,7 +9,10 @@ data Term
   | TmUnit
   | TmInt Int
   | TmString String
+  | TmLen
   | TmSucc
+  | TmIsZero
+  | TmPred
   | TmLet String Term Term
   | TmIf Term Term Term
   | TmPair Term Term
@@ -19,11 +22,10 @@ data Term
   | TmInr Term Type
   | TmCase Term Pattern Pattern
   | TmFix Term
-  | TmLetRec String Type Term Term
 
 type Pattern = (String, Term)
 
-data Type = TyBool | TyNat | TyString | TyUnit | TyPair Type Type | TyVariant Type Type | TyArr Type Type deriving (Eq)
+data Type = TyBool | TyNat | TyString | TyUnit | TyPair Type Type | TyVariant Type Type | TyArr Type Type | TyList Type deriving (Eq)
 
 type NameContext = [String]
 
@@ -48,7 +50,7 @@ prettyTm prec = go (prec /= 0) []
       TmAbs x _ t1 ->
         let (ctx', x') = fresh ctx x
          in showParen p ((concat ["λ", x', ". "] ++) . go False ctx' t1)
-      TmApp t1 t2 -> go True ctx t1 . (" " ++) . go True ctx t2
+      TmApp t1 t2 -> showParen p $ go True ctx t1 . (" " ++) . go True ctx t2
       TmVar x -> (ctx !! x ++)
       TmTrue -> ("true" ++)
       TmFalse -> ("false" ++)
@@ -56,28 +58,29 @@ prettyTm prec = go (prec /= 0) []
       TmInt x -> (show x ++)
       TmString x -> (show x ++)
       TmSucc -> ("succ" ++)
+      TmIsZero -> ("iszero" ++)
+      TmPred -> ("pred" ++)
       TmLet x t1 t2 ->
         let (ctx', x') = fresh ctx x
          in showParen p ((concat ["let ", x', " = "] ++) . go False ctx' t1 . (" in " ++) . go False ctx' t2)
       TmIf t1 t2 t3 ->
-        showParen p (("if " ++) . go False ctx t1 . (" then " ++) . go False ctx t2 . (" else " ++) . go False ctx t3)
-      TmPair t1 t2 -> ("{" ++) . go True ctx t1 . ("," ++) . go True ctx t2 . ("}" ++)
+        showParen p $ ("if " ++) . go True ctx t1 . (" then " ++) . go True ctx t2 . (" else " ++) . go True ctx t3
+      TmPair t1 t2 -> ("{" ++) . go False ctx t1 . ("," ++) . go False ctx t2 . ("}" ++)
       TmFst t1 -> go True ctx t1 . (".1" ++)
       TmSnd t1 -> go True ctx t1 . (".2" ++)
-      TmInl t1 _ -> ("inl " ++) . go True ctx t1
-      TmInr t1 _ -> ("inr " ++) . go True ctx t1
+      TmInl t1 _ -> showParen p $ ("inl " ++) . go True ctx t1
+      TmInr t1 _ -> showParen p ("inr " ++) . go True ctx t1
       TmCase t pl pr ->
-        ("case " ++)
-          . go False ctx t
-          . (" of\n  inl " ++)
-          . (fst pl ++)
-          . (" => " ++)
-          . go False ctx (snd pl)
-          . ("\n| inr " ++)
-          . (fst pr ++)
-          . (" => " ++)
-          . go False ctx (snd pr)
-      TmFix t1 -> ("fix " ++) . go True ctx t1
-      TmLetRec x _ t1 t2 ->
-        let (ctx', x') = fresh ctx x
-         in showParen p ((concat ["letrec ", x', " = "] ++) . go False ctx' t1 . (" in " ++) . go False ctx' t2)
+        showParen p $
+          ("case " ++)
+            . go True ctx t
+            . (" of\n  inl " ++)
+            . (fst pl ++)
+            . (" => " ++)
+            . go False ctx (snd pl)
+            . ("\n| inr " ++)
+            . (fst pr ++)
+            . (" => " ++)
+            . go False ctx (snd pr)
+      TmFix t1 -> showParen p $ ("fix " ++) . go True ctx t1
+      TmLen -> showParen p $ ("len " ++)

@@ -25,14 +25,18 @@ source-repository head
 
 library
   exposed-modules:
-      Arith.Data
       Arith.Eval
       Arith.Parser
+      Arith.Syntax
       Lib
       STLC.Eval
       STLC.Parser
       STLC.Syntax
       STLC.Type
+      Subtyping.Eval
+      Subtyping.Parser
+      Subtyping.Syntax
+      Subtyping.Type
       UTLC.Eval
       UTLC.Parser
       UTLC.Syntax

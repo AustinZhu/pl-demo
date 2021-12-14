@@ -1,0 +1,3 @@
+(\a:Nat+Bool.case a of
+    inl x => succ x
+  | inr y => if y then ((\x: String. 0) "rin") else (let x = succ 2 in ((\p: Nat. 0) x))) (inl 5 as Nat+Bool)

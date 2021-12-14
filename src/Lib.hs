@@ -42,7 +42,10 @@ help l = case l of
   UTLC ->
     unlines
       [ "Syntax:",
-        "  <term> ::= x | \\x.<term> | <term> <term>"
+        "  <term> ::= x | \\x.<term> | <term> <term> | <bool> | if <term> then <term> else <term> | iszero <term>",
+        "          | succ <term> | pred <term> | <num>",
+        "  <bool> ::= true | false",
+        "  <num>  ::= n"
       ]
   STLC ->
     unlines
@@ -51,10 +54,9 @@ help l = case l of
         "          | if <term> then <term> else <term> | fix <term> | letrec x:<type>=<term> in <term> | inr <term> | inl <term>",
         "          | case <term> of inl x => <term>|inr x => <term> | {<term>, <term>} | <term>.1 | <term>.2",
         "  <const> ::= <string> | <num> | <bool> | unit",
-        "  <string> ::= \"s\"",
         "  <bool> ::= true | false",
         "  <num>  ::= n",
-        "  <type> ::= Nat | String | Bool | Unit | <type> -> <type> | <type> * <type> | <type> + <type>"
+        "  <type> ::= Nat | Bool | Unit | <type> -> <type> | <type> * <type> | <type> + <type>"
       ]
   Sub -> ""
   SF -> ""
