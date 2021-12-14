@@ -53,35 +53,26 @@ pTyString = symbol "String" $> TyString
 pTyUnit :: Parser STLC.Syntax.Type
 pTyUnit = symbol "Unit" $> TyUnit
 
-pTyArr :: Parser STLC.Syntax.Type
+pTyArr :: Parser (STLC.Syntax.Type -> STLC.Syntax.Type)
 pTyArr = do
-  ty1 <- parens pTyArr <|> pTyBase
-  arr <- pTyArr'
-  pure $ arr ty1
-  where
-    pTyArr' :: Parser (STLC.Syntax.Type -> STLC.Syntax.Type)
-    pTyArr' = do
-      symbol "->"
-      ty2 <- parens pTy <|> pTy
-      pure (`TyArr` ty2)
+  symbol "->"
+  ty2 <- parens pTy <|> pTy
+  pure (`TyArr` ty2)
 
-pTyPair :: Parser STLC.Syntax.Type
+pTyPair :: Parser (STLC.Syntax.Type -> STLC.Syntax.Type)
 pTyPair = do
-  ty1 <- parens pTyPair <|> pTyBase
-  pair <- pTyPair'
-  pure $ pair ty1
-  where
-    pTyPair' :: Parser (STLC.Syntax.Type -> STLC.Syntax.Type)
-    pTyPair' = do
-      symbol "*"
-      ty2 <- parens pTy <|> pTy
-      pure (`TyPair` ty2)
+  symbol "*"
+  ty2 <- parens pTy <|> pTy
+  pure (`TyPair` ty2)
 
 pTyBase :: Parser STLC.Syntax.Type
 pTyBase = pTyBool <|> pTyNat <|> pTyString <|> pTyUnit
 
+pTyAtom :: Parser STLC.Syntax.Type
+pTyAtom = parens pTy <|> pTyBase
+
 pTy :: Parser STLC.Syntax.Type
-pTy = try pTyArr <|> try pTyPair <|> pTyBase
+pTy = pTyAtom <**> (pTyPair <|> pTyArr <|> pure id)
 
 pTrue :: Parser Term
 pTrue = symbol "true" $> TmTrue
@@ -168,14 +159,7 @@ pInit :: NameContext -> Parser Term
 pInit ctx = pAtom ctx <**> (pSeq ctx <|> pFst ctx <|> pSnd ctx <|> pApp ctx <|> pure id)
 
 pTerm :: NameContext -> Parser Term
-pTerm ctx =
-  pLam ctx
-    <|> pLet ctx
-    <|> pInit ctx
-    <|> pSucc ctx
-    <|> pPair ctx
-    <|> pConst
-    <|> pVar ctx
+pTerm ctx = pLam ctx <|> pLet ctx <|> pInit ctx <|> pSucc ctx <|> pPair ctx
 
 pAtom :: NameContext -> Parser Term
 pAtom ctx = parens (pTerm ctx) <|> pConst <|> pVar ctx

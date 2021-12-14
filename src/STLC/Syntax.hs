@@ -41,7 +41,7 @@ prettyTm prec = go (prec /= 0) []
         let (ctx', x') = fresh ctx x
          in showParen p ((concat ["λ", x', ". "] ++) . go False ctx' t1)
       TmApp t1 t2 -> go True ctx t1 . (" " ++) . go True ctx t2
-      TmVar x -> (show x ++)
+      TmVar x -> (ctx !! x ++)
       TmTrue -> ("true" ++)
       TmFalse -> ("false" ++)
       TmUnit -> ("unit" ++)
