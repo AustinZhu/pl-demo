@@ -41,7 +41,7 @@ variable = do
   first <- C.letterChar
   rest <- many (C.alphaNumChar <|> C.char '_')
   let name = (first : rest) in if name `elem` keywords
-    then fail (name ++ " is a keyword")
+    then fail (show name ++ " is a keyword")
     else pure (first : rest)
 
 parens :: Parser a -> Parser a
@@ -96,7 +96,11 @@ pInt :: Parser Term
 pInt = TmInt <$> lexeme L.decimal
 
 pString :: Parser Term
-pString = TmString <$> quotes (some $ anySingleBut '"')
+pString = do
+  C.char '"'
+  str <- many (anySingleBut '"')
+  C.char '"'
+  pure $ TmString str
 
 pUnit :: Parser Term
 pUnit = symbol "unit" $> TmUnit
@@ -121,7 +125,7 @@ pPair ctx = do
 
 pVar :: NameContext -> Parser Term
 pVar ctx = do
-  x <- lexeme variable
+  x <- variable
   let idx = indexOf ctx x
   pure $ TmVar idx
 
@@ -169,7 +173,7 @@ pLetRec ctx = do
 
 pApp :: NameContext -> Parser (Term -> Term)
 pApp ctx = do
-  C.space
+  C.hspace1
   t2 <- pAtom ctx
   pure (`TmApp` t2)
 
