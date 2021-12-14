@@ -34,8 +34,8 @@ eval1 t = case t of
   TmApp lam@(TmAbs _ t1) t2 ->
     if isVal t2
       then Just (substTm t2 t1)
-      else eval1 t2 >>= (Just . TmApp lam)
-  TmApp t1 t2 -> eval1 t1 >>= (Just . (`TmApp` t2))
+      else TmApp lam <$> eval1 t2
+  TmApp t1 t2 -> (`TmApp` t2) <$> eval1 t1
   _ -> Nothing
 
 eval :: Term -> Term

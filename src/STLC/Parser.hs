@@ -17,9 +17,8 @@ import Text.Megaparsec
     parse,
     some,
     (<|>),
+    anySingleBut
   )
-import qualified Text.Megaparsec as C
-import Text.Megaparsec.Char (space1)
 import qualified Text.Megaparsec.Char as C
 import qualified Text.Megaparsec.Char.Lexer as L
 
@@ -33,6 +32,17 @@ lexeme = L.lexeme whitespace
 
 symbol :: String -> Parser String
 symbol = L.symbol whitespace
+
+keywords :: [String]
+keywords = ["let", "in", "if", "then", "else", "true", "false", "Nat", "String", "Bool", "Unit", "unit", "succ", "fix", "letrec", "case", "of", "inl", "inr"]
+
+variable :: Parser String
+variable = do
+  first <- C.letterChar
+  rest <- many (C.alphaNumChar <|> C.char '_')
+  let name = (first : rest) in if name `elem` keywords
+    then fail (name ++ " is a keyword")
+    else pure (first : rest)
 
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
@@ -86,7 +96,7 @@ pInt :: Parser Term
 pInt = TmInt <$> lexeme L.decimal
 
 pString :: Parser Term
-pString = TmString <$> quotes (some $ C.anySingleBut '"')
+pString = TmString <$> quotes (some $ anySingleBut '"')
 
 pUnit :: Parser Term
 pUnit = symbol "unit" $> TmUnit
@@ -111,14 +121,14 @@ pPair ctx = do
 
 pVar :: NameContext -> Parser Term
 pVar ctx = do
-  x <- lexeme (some C.letterChar)
+  x <- lexeme variable
   let idx = indexOf ctx x
   pure $ TmVar idx
 
 pLam :: NameContext -> Parser Term
 pLam ctx = do
   symbol "\\"
-  x <- lexeme (some (C.letterChar <|> C.char '_'))
+  x <- lexeme (variable <|> symbol "_")
   symbol ":"
   ty <- pTy
   symbol "."
@@ -128,12 +138,34 @@ pLam ctx = do
 pLet :: NameContext -> Parser Term
 pLet ctx = do
   symbol "let"
-  x <- lexeme (some (C.letterChar <|> C.char '_'))
+  x <- lexeme variable
   symbol "="
   tm1 <- pTerm (x : ctx)
   symbol "in"
   tm2 <- pTerm (x : ctx)
   pure $ TmLet x tm1 tm2
+
+pIf :: NameContext -> Parser Term
+pIf ctx = do
+  symbol "if"
+  tm1 <- pTerm ctx
+  symbol "then"
+  tm2 <- pTerm ctx
+  symbol "else"
+  tm3 <- pTerm ctx
+  pure $ TmIf tm1 tm2 tm3
+
+pLetRec :: NameContext -> Parser Term
+pLetRec ctx = do
+  symbol "letrec"
+  x <- lexeme variable
+  symbol ":"
+  ty <- pTy
+  symbol "="
+  tm1 <- pTerm (x : ctx)
+  symbol "in"
+  tm2 <- pTerm (x : ctx)
+  pure $ TmLetRec x ty tm1 tm2
 
 pApp :: NameContext -> Parser (Term -> Term)
 pApp ctx = do
@@ -148,52 +180,52 @@ pSeq ctx = do
   pure $ TmApp (TmAbs "_" TyUnit t2)
 
 pFst :: Parser (Term -> Term)
-pFst = do
-  symbol ".1"
-  pure TmFst
+pFst = symbol ".1" $> TmFst
 
 pSnd :: Parser (Term -> Term)
-pSnd = do
-  symbol ".2"
-  pure TmSnd
+pSnd = symbol ".2" $> TmSnd
 
 pInl :: NameContext -> Parser Term
 pInl ctx = do
   symbol "inl"
   t <- pAtom ctx
   symbol "as"
-  ty <- pTy
-  pure $ TmInl t ty
+  TmInl t <$> pTy
 
 pInr :: NameContext -> Parser Term
 pInr ctx = do
   symbol "inr"
   t <- pAtom ctx
   symbol "as"
-  ty <- pTy
-  pure $ TmInr t ty
+  TmInr t <$> pTy
 
 pCase :: NameContext -> Parser Term
 pCase ctx = do
   symbol "case"
-  t <- pAtom ctx
+  t <- pTerm ctx
   symbol "of"
   symbol "inl"
-  xl <- lexeme (some (C.letterChar <|> C.char '_'))
+  xl <- variable
   symbol "=>"
-  tl <- pAtom (xl : ctx)
+  tl <- pTerm (xl : ctx)
   symbol "|"
   symbol "inr"
-  xr <- lexeme (some (C.letterChar <|> C.char '_'))
+  xr <- variable
   symbol "=>"
-  tr <- pAtom (xr : ctx)
+  tr <- pTerm (xr : ctx)
   pure $ TmCase t (xl, tl) (xr, tr)
 
+pFix :: NameContext -> Parser Term
+pFix ctx = do
+  symbol "fix"
+  t <- pAtom ctx
+  pure $ TmFix t
+
 pInit :: NameContext -> Parser Term
-pInit ctx = pAtom ctx <**> (pSeq ctx <|> pFst <|> pSnd <|> pApp ctx <|> pure id)
+pInit ctx = pAtom ctx <**> (pSeq ctx <|> pFst <|> pSnd <|> try (pApp ctx) <|> pure id)
 
 pTerm :: NameContext -> Parser Term
-pTerm ctx = pLam ctx <|> pLet ctx <|> pCase ctx <|> pSucc ctx <|> pInl ctx <|> pInr ctx <|> pInit ctx <|> pPair ctx
+pTerm ctx = pLam ctx <|> pLetRec ctx <|> pLet ctx <|> pFix ctx <|> pIf ctx <|> pCase ctx <|> pSucc ctx <|> pInl ctx <|> pInr ctx <|> pInit ctx <|> pPair ctx
 
 pAtom :: NameContext -> Parser Term
 pAtom ctx = parens (pTerm ctx) <|> pConst <|> pVar ctx

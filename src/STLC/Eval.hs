@@ -49,37 +49,44 @@ eval1 t = case t of
   TmApp lam@(TmAbs x _ t1) t2 ->
     if isVal t2
       then Just (substTm t2 t1)
-      else eval1 t2 >>= (Just . TmApp lam)
+      else TmApp lam <$> eval1 t2
   TmApp TmSucc t1 -> case t1 of
     TmInt n -> Just (TmInt (n + 1))
     _ -> eval1 t1 >>= (Just . TmApp TmSucc)
-  TmApp t1 t2 -> eval1 t1 >>= (Just . (`TmApp` t2))
+  TmApp t1 t2 -> (`TmApp` t2) <$> eval1 t1
   TmLet x t1 t2 ->
     if isVal t1
       then Just (substTm t1 t2)
-      else eval1 t1 >>= Just . (\t1' -> TmLet x t1' t2)
+      else (\t1' -> TmLet x t1' t2) <$> eval1 t1
+  TmIf b t1 t2 -> case b of
+    TmTrue -> Just t1
+    TmFalse -> Just t2
+    _ -> (\b' -> TmIf b' t1 t2) <$> eval1 b
+  TmLetRec x ty t1 t2 -> eval1 (TmLet x (TmFix (TmAbs x ty t1)) t2)
+  TmFix (TmAbs x ty t1) -> Just (substTm (TmFix (TmAbs x ty t1)) t1)
+  TmFix t -> TmFix <$> eval1 t
   TmPair t1 t2 ->
     if not (isVal t1)
-      then eval1 t1 >>= Just . TmPair t2
+      then (`TmPair` t2 ) <$> eval1 t1
       else
         if not (isVal t2)
-          then eval1 t2 >>= Just . TmPair t1
+          then TmPair t1 <$> eval1 t2
           else Nothing
   TmFst t -> case t of
     TmPair t1 t2 -> Just t1
-    _ -> eval1 t >>= (Just . TmFst)
+    _ -> TmFst <$> eval1 t
   TmSnd t -> case t of
     TmPair t1 t2 -> Just t2
-    _ -> eval1 t >>= (Just . TmSnd)
-  TmInl t ty -> if not (isVal t) then eval1 t >>= Just . (`TmInl` ty) else Nothing
-  TmInr t ty -> if not (isVal t) then eval1 t >>= Just . (`TmInr` ty) else Nothing
+    _ -> TmSnd <$> eval1 t
+  TmInl t ty -> if not (isVal t) then (`TmInl` ty) <$> eval1 t else Nothing
+  TmInr t ty -> if not (isVal t) then (`TmInr` ty) <$> eval1 t else Nothing
   TmCase t pl pr ->
     if isVal t
       then case t of
         TmInl tl _ -> Just (substTm tl (snd pl))
         TmInr tr _ -> Just (substTm tr (snd pr))
         _ -> Nothing
-      else eval1 t >>= (\t' -> Just (TmCase t' pl pr))
+      else (\t' -> TmCase t' pl pr) <$> eval1 t
   _ -> Nothing
 
 eval :: Term -> Term

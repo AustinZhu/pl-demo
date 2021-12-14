@@ -11,12 +11,15 @@ data Term
   | TmString String
   | TmSucc
   | TmLet String Term Term
+  | TmIf Term Term Term
   | TmPair Term Term
   | TmFst Term
   | TmSnd Term
   | TmInl Term Type
   | TmInr Term Type
   | TmCase Term Pattern Pattern
+  | TmFix Term
+  | TmLetRec String Type Term Term
 
 type Pattern = (String, Term)
 
@@ -56,6 +59,8 @@ prettyTm prec = go (prec /= 0) []
       TmLet x t1 t2 ->
         let (ctx', x') = fresh ctx x
          in showParen p ((concat ["let ", x', " = "] ++) . go False ctx' t1 . (" in " ++) . go False ctx' t2)
+      TmIf t1 t2 t3 ->
+        showParen p (("if " ++) . go False ctx t1 . (" then " ++) . go False ctx t2 . (" else " ++) . go False ctx t3)
       TmPair t1 t2 -> ("{" ++) . go True ctx t1 . ("," ++) . go True ctx t2 . ("}" ++)
       TmFst t1 -> go True ctx t1 . (".1" ++)
       TmSnd t1 -> go True ctx t1 . (".2" ++)
@@ -72,3 +77,7 @@ prettyTm prec = go (prec /= 0) []
           . (fst pr ++)
           . (" => " ++)
           . go False ctx (snd pr)
+      TmFix t1 -> ("fix " ++) . go True ctx t1
+      TmLetRec x _ t1 t2 ->
+        let (ctx', x') = fresh ctx x
+         in showParen p ((concat ["letrec ", x', " = "] ++) . go False ctx' t1 . (" in " ++) . go False ctx' t2)

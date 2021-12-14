@@ -10,7 +10,7 @@ typeOf ctx tm = case tm of
   -- x:T ∈ Γ ⇒ Γ ⊢ x : T
   TmVar n -> if n < length ctx then Just (ctx !! n) else Nothing
   -- Γ,x:T₁ ⊢ t₂ : T₁→T₂ ⇒ Γ ⊢ λx:T₁.t₂ : T₁→T₂
-  TmAbs _ ty t1 -> typeOf (ty : ctx) t1 >>= Just . TyArr ty
+  TmAbs _ ty t1 -> TyArr ty <$> typeOf (ty : ctx) t1
   -- Γ ⊢ t₁ : T₁₁→T₁₂ ∧ Γ ⊢ t₂ : T₁₁ ⇒ Γ ⊢ t₁ t₂ : T₁₂
   TmApp t1 t2 -> case typeOf ctx t1 of
     Just (TyArr ty1 ty2) -> case typeOf ctx t2 of
@@ -33,7 +33,11 @@ typeOf ctx tm = case tm of
   TmLet _ t1 t2 -> case typeOf ctx t1 of
     Just ty1 -> typeOf (ty1 : ctx) t2
     Nothing -> Nothing
-  TmPair t1 t2 -> typeOf ctx t2 <**> (typeOf ctx t1 <**> Just TyPair)
+  TmIf t1 t2 t3 -> case typeOf ctx t1 of
+    Just TyBool -> let ty = typeOf ctx t2 in if ty == typeOf ctx t3 then ty else Nothing
+    _ -> Nothing
+  TmLetRec x ty t1 t2 -> typeOf ctx $ TmLet x (TmFix (TmAbs x ty t1)) t2
+  TmPair t1 t2 -> TyPair <$> typeOf ctx t1 <*> typeOf ctx t2
   TmFst t -> case typeOf ctx t of
     Just (TyPair ty1 ty2) -> Just ty1
     _ -> Nothing
@@ -52,6 +56,9 @@ typeOf ctx tm = case tm of
        in if ty == typeOf (tyr : ctx) (snd pr)
             then ty
             else Nothing
+    _ -> Nothing
+  TmFix t -> case typeOf ctx t of
+    Just (TyArr ty1 ty2) -> if ty1 == ty2 then Just ty1 else Nothing
     _ -> Nothing
 
 tyck :: Term -> Term
