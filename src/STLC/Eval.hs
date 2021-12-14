@@ -17,7 +17,7 @@ shift i t = walk 0 t
 subst :: Int -> Term -> Term -> Term
 subst j s t = case t of
   TmFst t' -> TmFst (walk 0 t')
-  TmSnd t' -> TmSnd (walk 0 t'
+  TmSnd t' -> TmSnd (walk 0 t')
   _ -> walk 0 t
   where
     walk c t = case t of
