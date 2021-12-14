@@ -14,8 +14,13 @@ data Term
   | TmPair Term Term
   | TmFst Term
   | TmSnd Term
+  | TmInl Term Type
+  | TmInr Term Type
+  | TmCase Term Pattern Pattern
 
-data Type = TyBool | TyNat | TyString | TyUnit | TyPair Type Type | TyArr Type Type deriving (Eq)
+type Pattern = (String, Term)
+
+data Type = TyBool | TyNat | TyString | TyUnit | TyPair Type Type | TyVariant Type Type | TyArr Type Type deriving (Eq)
 
 type NameContext = [String]
 
@@ -54,3 +59,16 @@ prettyTm prec = go (prec /= 0) []
       TmPair t1 t2 -> ("{" ++) . go True ctx t1 . ("," ++) . go True ctx t2 . ("}" ++)
       TmFst t1 -> go True ctx t1 . (".1" ++)
       TmSnd t1 -> go True ctx t1 . (".2" ++)
+      TmInl t1 _ -> ("inl " ++) . go True ctx t1
+      TmInr t1 _ -> ("inr " ++) . go True ctx t1
+      TmCase t pl pr ->
+        ("case " ++)
+          . go False ctx t
+          . (" of\n  inl " ++)
+          . (fst pl ++)
+          . (" => " ++)
+          . go False ctx (snd pl)
+          . ("\n| inr " ++)
+          . (fst pr ++)
+          . (" => " ++)
+          . go False ctx (snd pr)

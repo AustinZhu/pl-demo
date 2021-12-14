@@ -1,9 +1,8 @@
 module STLC.Parser (parseCode) where
 
 import Control.Applicative ((<**>))
-import qualified Data.Data as STLC
 import Data.Functor (($>))
-import Data.Kind (Type)
+import Data.Kind ()
 import Data.Void (Void)
 import STLC.Syntax (NameContext, Term (..), Type (..), indexOf)
 import System.Exit (exitFailure)
@@ -41,38 +40,41 @@ parens = between (symbol "(") (symbol ")")
 quotes :: Parser a -> Parser a
 quotes = between (symbol "\"") (symbol "\"")
 
-pTyBool :: Parser STLC.Syntax.Type
+pTyBool :: Parser Type
 pTyBool = symbol "Bool" $> TyBool
 
-pTyNat :: Parser STLC.Syntax.Type
+pTyNat :: Parser Type
 pTyNat = symbol "Nat" $> TyNat
 
-pTyString :: Parser STLC.Syntax.Type
+pTyString :: Parser Type
 pTyString = symbol "String" $> TyString
 
-pTyUnit :: Parser STLC.Syntax.Type
+pTyUnit :: Parser Type
 pTyUnit = symbol "Unit" $> TyUnit
 
-pTyArr :: Parser (STLC.Syntax.Type -> STLC.Syntax.Type)
-pTyArr = do
-  symbol "->"
+pTyBinary :: String -> (Type -> Type -> Type) -> Parser (Type -> Type)
+pTyBinary op cons = do
+  symbol op
   ty2 <- parens pTy <|> pTy
-  pure (`TyArr` ty2)
+  pure (`cons` ty2)
 
-pTyPair :: Parser (STLC.Syntax.Type -> STLC.Syntax.Type)
-pTyPair = do
-  symbol "*"
-  ty2 <- parens pTy <|> pTy
-  pure (`TyPair` ty2)
+pTyArr :: Parser (Type -> Type)
+pTyArr = pTyBinary "->" TyArr
 
-pTyBase :: Parser STLC.Syntax.Type
+pTyPair :: Parser (Type -> Type)
+pTyPair = pTyBinary "*" TyPair
+
+pTyVariant :: Parser (Type -> Type)
+pTyVariant = pTyBinary "+" TyVariant
+
+pTyBase :: Parser Type
 pTyBase = pTyBool <|> pTyNat <|> pTyString <|> pTyUnit
 
-pTyAtom :: Parser STLC.Syntax.Type
+pTyAtom :: Parser Type
 pTyAtom = parens pTy <|> pTyBase
 
-pTy :: Parser STLC.Syntax.Type
-pTy = pTyAtom <**> (pTyPair <|> pTyArr <|> pure id)
+pTy :: Parser Type
+pTy = pTyAtom <**> (pTyPair <|> pTyVariant <|> pTyArr <|> pure id)
 
 pTrue :: Parser Term
 pTrue = symbol "true" $> TmTrue
@@ -95,7 +97,7 @@ pConst = pTrue <|> pFalse <|> pUnit <|> pInt <|> pString
 pSucc :: NameContext -> Parser Term
 pSucc ctx = do
   symbol "succ"
-  t <- pAtom ctx <|> pInt
+  t <- pAtom ctx
   pure $ TmApp TmSucc t
 
 pPair :: NameContext -> Parser Term
@@ -145,21 +147,53 @@ pSeq ctx = do
   t2 <- pAtom ctx
   pure $ TmApp (TmAbs "_" TyUnit t2)
 
-pFst :: NameContext -> Parser (Term -> Term)
-pFst ctx = do
+pFst :: Parser (Term -> Term)
+pFst = do
   symbol ".1"
   pure TmFst
 
-pSnd :: NameContext -> Parser (Term -> Term)
-pSnd ctx = do
+pSnd :: Parser (Term -> Term)
+pSnd = do
   symbol ".2"
   pure TmSnd
 
+pInl :: NameContext -> Parser Term
+pInl ctx = do
+  symbol "inl"
+  t <- pAtom ctx
+  symbol "as"
+  ty <- pTy
+  pure $ TmInl t ty
+
+pInr :: NameContext -> Parser Term
+pInr ctx = do
+  symbol "inr"
+  t <- pAtom ctx
+  symbol "as"
+  ty <- pTy
+  pure $ TmInr t ty
+
+pCase :: NameContext -> Parser Term
+pCase ctx = do
+  symbol "case"
+  t <- pAtom ctx
+  symbol "of"
+  symbol "inl"
+  xl <- lexeme (some (C.letterChar <|> C.char '_'))
+  symbol "=>"
+  tl <- pAtom (xl : ctx)
+  symbol "|"
+  symbol "inr"
+  xr <- lexeme (some (C.letterChar <|> C.char '_'))
+  symbol "=>"
+  tr <- pAtom (xr : ctx)
+  pure $ TmCase t (xl, tl) (xr, tr)
+
 pInit :: NameContext -> Parser Term
-pInit ctx = pAtom ctx <**> (pSeq ctx <|> pFst ctx <|> pSnd ctx <|> pApp ctx <|> pure id)
+pInit ctx = pAtom ctx <**> (pSeq ctx <|> pFst <|> pSnd <|> pApp ctx <|> pure id)
 
 pTerm :: NameContext -> Parser Term
-pTerm ctx = pLam ctx <|> pLet ctx <|> pInit ctx <|> pSucc ctx <|> pPair ctx
+pTerm ctx = pLam ctx <|> pLet ctx <|> pCase ctx <|> pSucc ctx <|> pInl ctx <|> pInr ctx <|> pInit ctx <|> pPair ctx
 
 pAtom :: NameContext -> Parser Term
 pAtom ctx = parens (pTerm ctx) <|> pConst <|> pVar ctx

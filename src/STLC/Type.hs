@@ -40,6 +40,19 @@ typeOf ctx tm = case tm of
   TmSnd t -> case typeOf ctx t of
     Just (TyPair ty1 ty2) -> Just ty2
     _ -> Nothing
+  TmInl t ty -> case ty of
+    TyVariant tl _ -> if typeOf ctx t == Just tl then Just ty else Nothing
+    _ -> Nothing
+  TmInr t ty -> case ty of
+    TyVariant _ tr -> if typeOf ctx t == Just tr then Just ty else Nothing
+    _ -> Nothing
+  TmCase t pl pr -> case typeOf ctx t of
+    Just (TyVariant tyl tyr) ->
+      let ty = typeOf (tyl : ctx) (snd pl)
+       in if ty == typeOf (tyr : ctx) (snd pr)
+            then ty
+            else Nothing
+    _ -> Nothing
 
 tyck :: Term -> Term
 tyck tm = case typeOf [] tm of
