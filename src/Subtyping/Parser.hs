@@ -247,7 +247,7 @@ pInit ctx = pAtom ctx <**> (pSeq ctx <|> pFst <|> pSnd <|> try (pApp ctx) <|> re
 
 pTerm :: NameContext -> Parser Term
 pTerm ctx =
-  foldl1 (<|>) $
+  choice $
     map (\p -> p ctx) [pLam, pLetRec, pLet, pFix, pIf, pCase, pSucc, pInl, pInr, pIsZero, pPred, pSucc, pLen, pInit, pPair]
 
 pAtom :: NameContext -> Parser Term

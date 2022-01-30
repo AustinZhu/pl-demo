@@ -51,15 +51,15 @@ prettyTm prec = go (prec /= 0) []
         let (ctx', x') = fresh ctx x
          in showParen p ((concat ["λ", x', ". "] ++) . go False ctx' t1)
       TmApp t1 t2 -> showParen p $ go True ctx t1 . (" " ++) . go True ctx t2
-      TmVar x -> (ctx !! x ++)
-      TmTrue -> ("true" ++)
-      TmFalse -> ("false" ++)
-      TmUnit -> ("unit" ++)
-      TmInt x -> (show x ++)
-      TmString x -> (show x ++)
-      TmSucc -> ("succ" ++)
-      TmIsZero -> ("iszero" ++)
-      TmPred -> ("pred" ++)
+      TmVar x -> shows (ctx !! x)
+      TmTrue -> showString "true"
+      TmFalse -> showString "false"
+      TmUnit -> showString "unit"
+      TmInt x -> shows x
+      TmString x -> shows x
+      TmSucc -> showString "succ"
+      TmIsZero -> showString "iszero"
+      TmPred -> showString "pred"
       TmLet x t1 t2 ->
         let (ctx', x') = fresh ctx x
          in showParen p ((concat ["let ", x', " = "] ++) . go False ctx' t1 . (" in " ++) . go False ctx' t2)
@@ -72,11 +72,11 @@ prettyTm prec = go (prec /= 0) []
       TmInr t1 _ -> showParen p ("inr " ++) . go True ctx t1
       TmCase t pl pr ->
         showParen p $
-          ("case " ++)
+          showString "case"
             . go True ctx t
-            . (" of\n  inl " ++)
-            . (fst pl ++)
-            . (" => " ++)
+            . showString " of\n  inl "
+            . showString (fst pl)
+            . showString " => "
             . go False ctx (snd pl)
             . ("\n| inr " ++)
             . (fst pr ++)

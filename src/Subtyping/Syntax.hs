@@ -1,4 +1,5 @@
 module Subtyping.Syntax where
+
 import Data.Map (Map)
 import qualified Data.Map as M
 
@@ -19,13 +20,26 @@ data Term
   | TmIf Term Term Term
   | TmTuple [Term]
   | TmProjTuple Term Int
-  | TmRecord (M.Map String Term)
+  | TmRecord [(String, Term)]
   | TmProjRecord Term String
   | TmInj String Term Type
-  | TmCase Term (M.Map String Term)
+  | TmCase Term [(String, Pattern)]
   | TmFix Term
 
-data Type = TyBool | TyNat | TyString | TyUnit | TyPair Type Type | TyVariant Type Type | TyArr Type Type | TyList Type deriving (Eq)
+type Pattern = (String, Term)
+
+data Type
+  = TyBool
+  | TyNat
+  | TyString
+  | TyUnit
+  | TyTuple [Type]
+  | TyRecord [(String, Type)]
+  | TyVariant Type Type
+  | TyArr Type Type
+  | TyList Type
+  | TyTop
+  deriving (Eq)
 
 type NameContext = [String]
 
@@ -65,10 +79,20 @@ prettyTm prec = go (prec /= 0) []
          in showParen p ((concat ["let ", x', " = "] ++) . go False ctx' t1 . (" in " ++) . go False ctx' t2)
       TmIf t1 t2 t3 ->
         showParen p $ ("if " ++) . go True ctx t1 . (" then " ++) . go True ctx t2 . (" else " ++) . go True ctx t3
-      TmTuple ts -> ("{" ++) . foldr1 (\acc x -> ("," ++) . acc) (map (go False ctx) ts) . ("}" ++)
+      TmTuple ts ->
+        ("{" ++)
+          . foldr1 (\acc x -> ("," ++) . acc) (map (go False ctx) ts)
+          . ("}" ++)
       TmProjTuple t i -> go True ctx t . ("." ++) . (show i ++)
-      TmRecord m -> ("{" ++) . foldr1 (\acc x -> ("," ++) . acc) (map (\(k, v) -> (k ++) . ("=" ++) . go False ctx v) (M.toList m)) . ("}" ++)
+      TmRecord m ->
+        ("{" ++)
+          . foldr1 (\acc x -> ("," ++) . acc) (map (\(k, v) -> (k ++) . ("=" ++) . go False ctx v) m)
+          . ("}" ++)
       TmProjRecord t s -> go True ctx t . ("." ++) . (s ++)
       TmInj s t _ -> showParen p $ (s ++) . (" " ++) . go True ctx t
       TmFix t1 -> showParen p $ ("fix " ++) . go True ctx t1
-      TmLen -> showParen p $ ("len " ++)
+      TmLen -> showParen p ("len " ++)
+      TmCase t m ->
+        showParen p $
+          ("case " ++) . go True ctx t . (" of\n    " ++)
+            . foldr1 (\acc x -> acc . ("\n  | " ++)) (map (\(k, v) -> (k ++) . (" " ++) . (fst v ++) . (" => " ++) . go False ctx (snd v)) m)

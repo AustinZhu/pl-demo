@@ -5,6 +5,11 @@ import Subtyping.Syntax (Term (..), Type (..))
 
 type TypeContext = [Type]
 
+(<:) :: Type -> Type -> Bool
+(<:) ty1 TyTop = True
+(<:) (TyArr t1 t2) (TyArr t1' t2') = (t1' <: t1) && (t2 <: t2')
+(<:) (TyList t1) (TyList t2) = t1 <: t2
+
 typeOf :: TypeContext -> Term -> Maybe Type
 typeOf ctx tm = case tm of
   -- x:T ∈ Γ ⇒ Γ ⊢ x : T
@@ -44,6 +49,15 @@ typeOf ctx tm = case tm of
   TmFix t -> case typeOf ctx t of
     Just (TyArr ty1 ty2) -> if ty1 == ty2 then Just ty1 else Nothing
     _ -> Nothing
+  TmTuple ts -> case ts of
+    [] -> Just TyUnit
+    _ -> TyTuple <$> traverse (typeOf ctx) ts
+  TmProjTuple t i -> case typeOf ctx t of
+    Just (TyTuple ts) -> if i < length ts then Just (ts !! i) else Nothing
+    _ -> Nothing
+  TmRecord ts -> case ts of
+    [] -> Just TyUnit
+    _ -> TyRecord <$> traverse (\(n, t) -> (\ty -> (n, ty)) <$> typeOf ctx t) ts
 
 tyck :: Term -> Term
 tyck tm = case typeOf [] tm of
